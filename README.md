@@ -250,8 +250,14 @@ SELECT
 FROM productos pr
 JOIN usuarios u ON pr.id_usuario = u.id_usuario;
 
-**CONSULTAR**
+**CONSULTAR VISTAS**
 SELECT * FROM vista_pedidos_basica;
 SELECT * FROM vista_gestion_pedidos;
 SELECT * FROM  vista_productos_vendedores;
 SELECT * FROM  vista_productos_categorias;
+
+**CONSULTAR DATOS ESPECIFICOS DE TABLAS**
+SELECT nombre
+FROM usuarios 
+WHERE email = 'carlos@example.com';
+
