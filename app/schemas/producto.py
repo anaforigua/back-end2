@@ -1,11 +1,11 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 class ProductoBase(BaseModel):
     nombre: str
     descripcion: str
-    precio: float
+    precio: float = Field(..., ge=0, description="El precio no puede ser negativo")
     imagenes_producto: str
     condicion_producto: str
     estado_producto: str
@@ -20,7 +20,7 @@ class ProductoCreate(ProductoBase):
 class ProductoUpdate(BaseModel):
     nombre: Optional[str] = None
     descripcion: Optional[str] = None
-    precio: Optional[float] = None
+    precio: Optional[float] = Field(None, ge=0)
     imagenes_producto: Optional[str] = None
     condicion_producto: Optional[str] = None
     estado_producto: Optional[str] = None
