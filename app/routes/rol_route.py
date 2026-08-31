@@ -5,7 +5,7 @@ from app.schemas.rol import RolCreate, RolUpdate, RolRead
 from app.services.rol_service import RolService
 
 router = APIRouter(prefix="/roles", tags=["Roles"])
-
+    
 @router.post("/", response_model=RolRead, status_code=status.HTTP_201_CREATED)
 def crear_rol(data: RolCreate, db: Session = Depends(get_db)):
     return RolService.crear(db, data)

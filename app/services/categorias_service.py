@@ -6,6 +6,14 @@ from app.schemas.categorias import CategoriaCreate, CategoriaUpdate
 class CategoriaService:
     @staticmethod
     def crear(db: Session, data: CategoriaCreate) -> CategoriaModel:
+        # Validación añadida: Verificar si la categoría ya existe en la base de datos
+        categoria_existente = db.query(CategoriaModel).filter(CategoriaModel.nombre == data.nombre).first()
+        if categoria_existente:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail="❌ Categoría duplicada."
+            )
+
         db_item = CategoriaModel(**data.model_dump())
         db.add(db_item)
         db.commit()

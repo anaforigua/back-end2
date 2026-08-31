@@ -1,10 +1,17 @@
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 class CategoriaBase(BaseModel):
-    nombre: str
+    nombre: str = Field(..., min_length=1, description="El nombre no puede estar vacío")
     descripcion: str
     icono_categoria: str
+
+    @field_validator('nombre')
+    @classmethod
+    def validar_no_vacio(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("❌ Nombre vacío.")
+        return v
 
 class CategoriaCreate(CategoriaBase):
     pass

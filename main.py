@@ -9,6 +9,8 @@ from app.models.producto import ProductoModel
 from app.models.pedido import PedidoModel
 from app.models.detalle_pedido import DetallePedidoModel
 from app.models.red_social import RedSocialModel
+from app.models.rol import Rol
+from app.models.roles_usuarios import RolUsuarioModel  # <--- Corregido (Completado)
 
 from app.routes import (
     categorias_route,
@@ -17,7 +19,9 @@ from app.routes import (
     pedido_route,
     detalle_pedido_route,
     pais_de_origen_route,
-    red_social_route,rol_route
+    red_social_route,
+    rol_route,
+    roles_usuarios_route  # <--- Añadido aquí en las importaciones de rutas
 )
 
 # Crea todas las tablas en la base de datos (SQLite o PostgreSQL)
@@ -33,3 +37,4 @@ app.include_router(detalle_pedido_route.router)
 app.include_router(pais_de_origen_route.router)
 app.include_router(red_social_route.router)
 app.include_router(rol_route.router)
+app.include_router(roles_usuarios_route.router)

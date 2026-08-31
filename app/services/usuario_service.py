@@ -6,6 +6,14 @@ from app.schemas.usuario import UsuarioCreate, UsuarioUpdate
 class UsuarioService:
     @staticmethod
     def crear(db: Session, data: UsuarioCreate) -> UsuarioModel:
+        # Validación añadida: Verificar si el correo ya está registrado en la base de datos
+        correo_existente = db.query(UsuarioModel).filter(UsuarioModel.email == data.email).first()
+        if correo_existente:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail="El correo repetido no está permitido."
+            )
+
         db_item = UsuarioModel(**data.model_dump())
         db.add(db_item)
         db.commit()
