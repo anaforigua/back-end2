@@ -7,7 +7,7 @@ class CategoriaService:
     @staticmethod
     def crear(db: Session, data: CategoriaCreate) -> CategoriaModel:
         # Validación añadida: Verificar si la categoría ya existe en la base de datos
-        categoria_existente = db.query(CategoriaModel).filter(CategoriaModel.nombre == data.nombre).first()
+        categoria_existente = db.query(CategoriaModel).filter(CategoriaModel.nombre_categoria == data.nombre_categoria).first()
         if categoria_existente:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, 

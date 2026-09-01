@@ -17,7 +17,12 @@ class UsuarioModel(Base):
 
     # Atributos del segundo modelo agregados para la función del rol sin perder nada del primero
    
-    id_rol = Column(Integer, ForeignKey("roles.id_rol"), nullable=False) # Cambia 'roles.id' por el nombre real de la PK de roles
-    rol = relationship("Rol")
-
+  # Cambia 'roles.id' por el nombre real de la PK de roles
+    roles_usuarios = relationship("RolUsuarioModel", back_populates="usuario", cascade="all, delete-orphan")
     pedidos = relationship("PedidoModel", back_populates="usuario")
+    
+    # Añade esto dentro de tu clase UsuarioModel:
+    @property
+    def roles(self):
+        # Debe retornar el objeto 'rol' completo de cada registro intermedio
+        return [ru.rol for ru in self.roles_usuarios if ru.rol]

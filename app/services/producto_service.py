@@ -1,10 +1,11 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException, status
 from app.models.producto import ProductoModel as Producto
 from app.models.categorias import CategoriaModel as Categoria
 # Importa tu modelo de país de origen según corresponda (ejemplo: from app.models.pais import PaisModel as Pais)
 from app.models.detalle_pedido import DetallePedidoModel as DetallePedido
 from app.schemas.producto import ProductoCreate, ProductoUpdate
+from app.models.pais_de_origen import PaisDeOrigenModel as Pais # Asegúrate de importar el modelo de país arriba
 
 class ProductoService:
 
@@ -31,24 +32,40 @@ class ProductoService:
             )
 
         # 3. No permitir asociarlo a un país de origen que no existe (Validación añadida)
-        # Asegúrate de cambiar 'id_pais_de_origen' o el nombre del modelo si varía en tu base de datos
         # pais_existente = db.query(Pais).filter(Pais.id_pais == data.id_pais_de_origen).first()
         # if not pais_existente:
         #     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="❌ País inexistente.")
 
-        nuevo_producto = Producto(**data.dict())
+        nuevo_producto = Producto(**data.model_dump())
         db.add(nuevo_producto)
         db.commit()
         db.refresh(nuevo_producto)
-        return nuevo_producto
+        
+        # Retornamos buscando por ID para asegurar que traiga las relaciones cargadas para el esquema de lectura
+        return ProductoService.obtener_por_id(db, nuevo_producto.id_productos)
 
     @staticmethod
     def obtener_todos(db: Session):
-        return db.query(Producto).all()
+        return (
+            db.query(Producto)
+            .options(
+                joinedload(Producto.categoria),
+                joinedload(Producto.pais_de_origen)
+            )
+            .all()
+        )
 
     @staticmethod
     def obtener_por_id(db: Session, producto_id: int):
-        producto = db.query(Producto).filter(Producto.id_productos == producto_id).first()
+        producto = (
+            db.query(Producto)
+            .options(
+                joinedload(Producto.categoria),
+                joinedload(Producto.pais_de_origen)
+            )
+            .filter(Producto.id_productos == producto_id)
+            .first()
+        )
         if not producto:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -58,7 +75,12 @@ class ProductoService:
 
     @staticmethod
     def actualizar(db: Session, producto_id: int, data: ProductoUpdate):
-        producto = ProductoService.obtener_por_id(db, producto_id)
+        producto = db.query(Producto).filter(Producto.id_productos == producto_id).first()
+        if not producto:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Producto no encontrado."
+            )
 
         # Validar precio negativo o cantidad inválida en actualización
         if data.precio is not None and data.precio < 0:
@@ -81,16 +103,23 @@ class ProductoService:
                     detail="❌ Categoría inexistente."
                 )
 
-        for key, value in data.dict(exclude_unset=True).items():
+        for key, value in data.model_dump(exclude_unset=True).items():
             setattr(producto, key, value)
 
         db.commit()
         db.refresh(producto)
-        return producto
+        
+        # Retornamos asegurando las relaciones cargadas
+        return ProductoService.obtener_por_id(db, producto_id)
 
     @staticmethod
     def eliminar(db: Session, producto_id: int):
-        producto = ProductoService.obtener_por_id(db, producto_id)
+        producto = db.query(Producto).filter(Producto.id_productos == producto_id).first()
+        if not producto:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Producto no encontrado."
+            )
 
         # No permitir eliminar un producto si está asociado a un detalle de pedido
         producto_en_pedidos = db.query(DetallePedido).filter(DetallePedido.id_producto == producto_id).first()

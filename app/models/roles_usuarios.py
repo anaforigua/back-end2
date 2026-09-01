@@ -7,9 +7,9 @@ class RolUsuarioModel(Base):
 
     id_rol_usuario = Column(Integer, primary_key=True, index=True)
     
-    # Asegúrate de que el nombre antes del punto coincida con el __tablename__ real de tu usuario
     id_usuario = Column(Integer, ForeignKey("usuario.id_usuarios"), nullable=False)
     id_rol = Column(Integer, ForeignKey("roles.id_rol"), nullable=False)
 
-    usuario = relationship("UsuarioModel")
-    rol = relationship("Rol")
+    # Añade back_populates para conectar ambos lados de la relación
+    usuario = relationship("UsuarioModel", back_populates="roles_usuarios")
+    rol = relationship("Rol", back_populates="roles_usuarios")

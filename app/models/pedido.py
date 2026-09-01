@@ -5,8 +5,9 @@ from app.database import Base
 
 class PedidoModel(Base):
     __tablename__ = "pedidos"
+    __allow_unmapped__ = True
 
-    id_pedido = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    id_pedidos = Column(Integer, primary_key=True, index=True, autoincrement=True)
     fecha = Column(DateTime, nullable=False, default=datetime.utcnow)
     estado_pedido = Column(String, nullable=False)
     tipo_de_pago = Column(String, nullable=False)

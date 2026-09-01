@@ -14,14 +14,14 @@ def crear_pedido(data: PedidoCreate, db: Session = Depends(get_db)):
 def listar_pedidos(db: Session = Depends(get_db)):
     return PedidoService.obtener_todos(db)
 
-@router.get("/{id_pedido}", response_model=PedidoRead)
-def obtener_pedido(id_pedido: int, db: Session = Depends(get_db)):
-    return PedidoService.obtener_por_id(db, id_pedido)
+@router.get("/{id_pedidos}", response_model=PedidoRead)
+def obtener_pedido(id_pedidos: int, db: Session = Depends(get_db)):
+    return PedidoService.obtener_por_id(db, id_pedidos)
 
-@router.put("/{id_pedido}", response_model=PedidoRead)
-def actualizar_pedido(id_pedido: int, data: PedidoUpdate, db: Session = Depends(get_db)):
-    return PedidoService.actualizar(db, id_pedido, data)
+@router.put("/{id_pedidos}", response_model=PedidoRead)
+def actualizar_pedido(id_pedidos: int, data: PedidoUpdate, db: Session = Depends(get_db)):
+    return PedidoService.actualizar(db, id_pedidos, data)
 
-@router.delete("/{id_pedido}")
-def eliminar_pedido(id_pedido: int, db: Session = Depends(get_db)):
-    return PedidoService.eliminar(db, id_pedido)
+@router.delete("/{id_pedidos}")
+def eliminar_pedido(id_pedidos: int, db: Session = Depends(get_db)):
+    return PedidoService.eliminar(db, id_pedidos)

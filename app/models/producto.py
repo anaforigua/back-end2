@@ -2,6 +2,7 @@ from datetime import datetime
 from sqlalchemy import Column, Integer, String, Text, Float, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from app.database import Base
+from app.models.pais_de_origen import PaisDeOrigenModel
 
 class ProductoModel(Base):
     __tablename__ = "productos"
@@ -16,7 +17,11 @@ class ProductoModel(Base):
     cantidad = Column(Integer, nullable=False)
     fecha_publicacion = Column(DateTime, nullable=False, default=datetime.utcnow)
     id_categoria = Column(Integer, ForeignKey("categorias.id_categoria"), nullable=False)
-    id_pais_de_origen = Column(Integer, nullable=False)
+    
+    # Aquí cambiamos a "pais_de_origen" en singular para que coincida con el nombre de la tabla
+    id_pais_de_origen = Column(Integer, ForeignKey("pais_de_origen.id_pais_de_origen"), nullable=False)
 
-    categoria = relationship("CategoriaModel", back_populates="productos")
+    # Relaciones explícitas con primaryjoin
+    categoria = relationship("CategoriaModel", primaryjoin="ProductoModel.id_categoria == CategoriaModel.id_categoria", foreign_keys=[id_categoria])
+    pais_de_origen = relationship("PaisDeOrigenModel", primaryjoin="ProductoModel.id_pais_de_origen == PaisDeOrigenModel.id_pais_de_origen", foreign_keys=[id_pais_de_origen])
     detalles_pedido = relationship("DetallePedidoModel", back_populates="producto")

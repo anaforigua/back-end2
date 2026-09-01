@@ -10,7 +10,7 @@ from app.models.pedido import PedidoModel
 from app.models.detalle_pedido import DetallePedidoModel
 from app.models.red_social import RedSocialModel
 from app.models.rol import Rol
-from app.models.roles_usuarios import RolUsuarioModel  # <--- Corregido (Completado)
+from app.models.roles_usuarios import RolUsuarioModel
 
 from app.routes import (
     categorias_route,
@@ -21,14 +21,20 @@ from app.routes import (
     pais_de_origen_route,
     red_social_route,
     rol_route,
-    roles_usuarios_route  # <--- Añadido aquí en las importaciones de rutas
+    roles_usuarios_route
 )
 
-# Crea todas las tablas en la base de datos (SQLite o PostgreSQL)
-Base.metadata.create_all(bind=engine)
-
+# 1. Inicializar FastAPI primero para que 'app' exista antes de usarla
 app = FastAPI(title="API Backend PostgreSQL - 3 Capas", version="1.0")
 
+# 2. Crear todas las tablas en la base de datos
+Base.metadata.create_all(bind=engine)
+
+@app.get("/")
+def read_root():
+    return {"message": "Conectado a PostgreSQL y tablas creadas exitosamente"}
+
+# 3. Incluir todos los routers
 app.include_router(categorias_route.router)
 app.include_router(usuario_route.router)
 app.include_router(producto_route.router)

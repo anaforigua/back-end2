@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, Field, field_validator
 
 class RolResumenRead(BaseModel):
@@ -9,17 +9,27 @@ class RolResumenRead(BaseModel):
         from_attributes = True
 
 class UsuarioBase(BaseModel):
-    nombre: str = Field(..., min_length=1, description="El nombre no puede estar vacío")
-    apellidos: str = Field(..., min_length=1, description="Los apellidos no pueden estar vacíos")
+    nombre: str = Field(..., min_length=3, description="El nombre no puede estar vacío")
+    apellidos: str = Field(..., min_length=3, description="Los apellidos no pueden estar vacíos")
     avatar: str
     biografía: str
     ubicación: str
     email: str = Field(..., description="Correo electrónico obligatorio")
     calificacion: float
     estado_usuario: str
-    id_rol: int
+    id_roles: List[int]
 
-    # Validador para asegurar que el correo tenga un formato válido básico
+    @field_validator('id_roles')
+    @classmethod
+    def validar_roles_permitidos(cls, v: List[int]) -> List[int]:
+        roles_permitidos = {2, 3}
+        if not v:
+            raise ValueError("El usuario debe tener al menos un rol (comprador o vendedor).")
+        for rol_id in v:
+            if rol_id not in roles_permitidos:
+                raise ValueError("Solo puedes elegir entre el rol 2 (Comprador), el rol 3 (Vendedor) o ambos.")
+        return v
+
     @field_validator('email')
     @classmethod
     def validar_email(cls, v: str) -> str:
@@ -27,7 +37,6 @@ class UsuarioBase(BaseModel):
             raise ValueError("Correo inválido")
         return v
 
-    # Validador opcional para evitar espacios en blanco vacíos en nombres
     @field_validator('nombre', 'apellidos')
     @classmethod
     def validar_no_vacio(cls, v: str) -> str:
@@ -47,11 +56,31 @@ class UsuarioUpdate(BaseModel):
     email: Optional[str] = None
     calificacion: Optional[float] = None
     estado_usuario: Optional[str] = None
-    id_rol: Optional[int] = None
+    id_roles: Optional[List[int]] = None
 
-class UsuarioRead(UsuarioBase):
+    @field_validator('id_roles')
+    @classmethod
+    def validar_roles_permitidos(cls, v: Optional[List[int]]) -> Optional[List[int]]:
+        if v is not None:
+            roles_permitidos = {2, 3}
+            if not v:
+                raise ValueError("El usuario debe tener al menos un rol (comprador o vendedor).")
+            for rol_id in v:
+                if rol_id not in roles_permitidos:
+                    raise ValueError("Solo puedes elegir entre el rol 2 (Comprador), el rol 3 (Vendedor) o ambos.")
+        return v
+
+class UsuarioRead(BaseModel):
     id_usuarios: int
-    rol: Optional[RolResumenRead] = None
+    nombre: str
+    apellidos: str
+    avatar: str
+    biografía: str
+    ubicación: str
+    email: str
+    calificacion: float
+    estado_usuario: str
+    roles: List[RolResumenRead] = []
 
     class Config:
         from_attributes = True
