@@ -4,9 +4,9 @@ from app.schemas.producto import ProductoRead
 
 class DetallePedidoBase(BaseModel):
     cantidad: int
-    subtotal: float
-    precio_unitario: Optional[float] = None
     id_productos: int
+    precio_unitario: Optional[float] = None
+    subtotal: Optional[float] = 0.0  # Optional con valor por defecto para que no exija mandarlo en el JSON
 
 class DetallePedidoCreate(DetallePedidoBase):
     pass

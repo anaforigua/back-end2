@@ -7,7 +7,24 @@ from app.models.producto import ProductoModel
 from app.schemas.pedido import PedidoCreate, PedidoUpdate
 
 class PedidoService:
-    
+
+    @staticmethod
+    def _obtener_stock(producto: ProductoModel) -> int:
+        """Obtiene la cantidad/stock del producto sin importar el nombre del atributo en el modelo."""
+        if hasattr(producto, "cantidad"):
+            return producto.cantidad
+        elif hasattr(producto, "stock"):
+            return producto.stock
+        return 0
+
+    @staticmethod
+    def _modificar_stock(producto: ProductoModel, cantidad_cambio: int):
+        """Suma o resta stock/cantidad de forma segura."""
+        if hasattr(producto, "cantidad"):
+            producto.cantidad += cantidad_cambio
+        elif hasattr(producto, "stock"):
+            producto.stock += cantidad_cambio
+
     @staticmethod
     def crear(db: Session, data: PedidoCreate) -> PedidoModel:
         # RB01 — Usuario obligatorio: Verificar si el usuario existe
@@ -45,64 +62,61 @@ class PedidoService:
                 )
 
             # RB05 — Disponibilidad (Stock suficiente)
-            if producto.stock < detalle.cantidad:
+            stock_actual = PedidoService._obtener_stock(producto)
+            if stock_actual < detalle.cantidad:
+                nombre = getattr(producto, "nombre_producto", getattr(producto, "nombre", f"ID {producto.id_productos}"))
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"❌ Stock insuficiente para el producto '{producto.nombre_producto}'. Stock disponible: {producto.stock}"
+                    detail=f"❌ Stock insuficiente para el producto '{nombre}'. Stock disponible: {stock_actual}"
                 )
 
-            # RB06 — Cálculo automático del total y subtotal unitario histórico
-            precio_unitario = detalle.precio_unitario if detalle.precio_unitario else producto.precio
+            # RB06 — Cálculo automático del total y subtotal utilizando el precio del producto
+            precio_unitario = detalle.precio_unitario if getattr(detalle, "precio_unitario", None) else getattr(producto, "precio", 0.0)
             subtotal = detalle.cantidad * precio_unitario
             total_pedido += subtotal
 
             detalles_calculados.append({
                 "producto": producto,
                 "cantidad": detalle.cantidad,
-                "precio_unitario": precio_unitario,
                 "subtotal": subtotal
             })
 
         # RB07 — Estado inicial PENDIENTE por defecto
-        pedido_data = data.model_dump(exclude={"detalles", "fecha"})
+        pedido_data = data.model_dump(exclude={"detalles", "fecha", "total"})
         if not pedido_data.get("estado_pedido"):
             pedido_data["estado_pedido"] = "PENDIENTE"
-        
-        # Asignar el total calculado al modelo del pedido
-        pedido_data["total"] = total_pedido
 
+        # Guardar pedido principal
         db_item = PedidoModel(**pedido_data)
         db.add(db_item)
         db.commit()
         db.refresh(db_item)
 
-        # Registrar los detalles, descontar stock y actualizar estado del producto si se agota
+        # Registrar los detalles (sin el atributo precio_unitario)
         for item in detalles_calculados:
             db_detalle = DetallePedidoModel(
                 id_pedidos=db_item.id_pedidos,
                 id_productos=item["producto"].id_productos,
                 cantidad=item["cantidad"],
-                precio_unitario=item["precio_unitario"],
                 subtotal=item["subtotal"]
             )
             db.add(db_detalle)
             
             # Descontar stock
-            item["producto"].stock -= item["cantidad"]
+            PedidoService._modificar_stock(item["producto"], -item["cantidad"])
             
-            # Si el stock llega a 0, actualizar estado a vendido si el modelo lo soporta
-            if item["producto"].stock == 0:
-                if hasattr(item["producto"], "estado"):
+            # Si el stock llega a 0 o menos, actualizar estado
+            if PedidoService._obtener_stock(item["producto"]) <= 0:
+                if hasattr(item["producto"], "estado_producto"):
+                    item["producto"].estado_producto = "Agotado"
+                elif hasattr(item["producto"], "estado"):
                     item["producto"].estado = "vendido"
-                elif hasattr(item["producto"], "estado_producto"):
-                    item["producto"].estado_producto = "vendido"
 
             db.add(item["producto"])
 
         db.commit()
         db.refresh(db_item)
         
-        # Retornar el pedido con las relaciones cargadas
         return PedidoService.obtener_por_id(db, db_item.id_pedidos)
 
     @staticmethod
@@ -128,29 +142,37 @@ class PedidoService:
         
         # RB08, RB09 — Control de estados y restricciones de cancelación
         if "estado_pedido" in datos_actualizacion:
-            nuevo_estado = datos_actualizacion["estado_pedido"]
-            estado_actual = db_item.estado_pedido
+            nuevo_estado = datos_actualizacion["estado_pedido"].upper()
+            estado_actual = db_item.estado_pedido.upper() if db_item.estado_pedido else ""
 
-            # Un pedido COMPLETADO no puede pasar a CANCELADO
-            if estado_actual == "COMPLETADO" and nuevo_estado == "CANCELADO":
+            # Un pedido COMPLETADO o ENTREGADO no puede pasar a CANCELADO
+            if estado_actual in ["COMPLETADO", "ENTREGADO"] and nuevo_estado == "CANCELADO":
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="❌ No se puede cancelar un pedido que ya ha sido completado."
+                    detail="❌ No se puede cancelar un pedido que ya ha sido completado o entregado."
                 )
             
-            # Si se cancela el pedido, devolvemos el stock y cambiamos el estado del producto a disponible
+            # Si se completa o entrega, verificar disponibilidad del producto (si stock <= 0, pasa a Agotado)
+            if nuevo_estado in ["COMPLETADO", "ENTREGADO"]:
+                for detalle in db_item.detalles:
+                    producto = db.query(ProductoModel).filter(ProductoModel.id_productos == detalle.id_productos).first()
+                    if producto and PedidoService._obtener_stock(producto) <= 0:
+                        if hasattr(producto, "estado_producto"):
+                            producto.estado_producto = "Agotado"
+                        elif hasattr(producto, "estado"):
+                            producto.estado = "vendido"
+                        db.add(producto)
+
+            # Si se cancela el pedido, devolvemos el stock y cambiamos la disponibilidad a Disponible
             if nuevo_estado == "CANCELADO" and estado_actual != "CANCELADO":
                 for detalle in db_item.detalles:
                     producto = db.query(ProductoModel).filter(ProductoModel.id_productos == detalle.id_productos).first()
                     if producto:
-                        producto.stock += detalle.cantidad
-                        
-                        # Cambiar estado de vendido a disponible de forma segura
-                        if hasattr(producto, "estado"):
+                        PedidoService._modificar_stock(producto, detalle.cantidad)
+                        if hasattr(producto, "estado_producto"):
+                            producto.estado_producto = "Disponible"
+                        elif hasattr(producto, "estado"):
                             producto.estado = "disponible"
-                        elif hasattr(producto, "estado_producto"):
-                            producto.estado_producto = "disponible"
-                            
                         db.add(producto)
 
         for key, value in datos_actualizacion.items():
@@ -163,8 +185,6 @@ class PedidoService:
     @staticmethod
     def eliminar(db: Session, id_pedidos: int) -> dict:
         db_item = PedidoService.obtener_por_id(db, id_pedidos)
-        
-        # RB10 — Integridad del pedido
         db.delete(db_item)
         db.commit()
         return {"mensaje": "Pedido eliminado exitosamente"}
