@@ -1,10 +1,11 @@
 from typing import Optional
 from pydantic import BaseModel
+from app.schemas.producto import ProductoRead
 
 class DetallePedidoBase(BaseModel):
     cantidad: int
     subtotal: float
-    id_pedidos: int
+    precio_unitario: Optional[float] = None
     id_productos: int
 
 class DetallePedidoCreate(DetallePedidoBase):
@@ -13,11 +14,13 @@ class DetallePedidoCreate(DetallePedidoBase):
 class DetallePedidoUpdate(BaseModel):
     cantidad: Optional[int] = None
     subtotal: Optional[float] = None
-    id_pedidos: Optional[int] = None
+    precio_unitario: Optional[float] = None
     id_productos: Optional[int] = None
 
 class DetallePedidoRead(DetallePedidoBase):
     detalle_pedido: int
+    id_pedidos: Optional[int] = None
+    producto: Optional[ProductoRead] = None
 
     class Config:
         from_attributes = True

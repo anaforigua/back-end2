@@ -19,7 +19,8 @@ class UsuarioModel(Base):
    
   # Cambia 'roles.id' por el nombre real de la PK de roles
     roles_usuarios = relationship("RolUsuarioModel", back_populates="usuario", cascade="all, delete-orphan")
-    pedidos = relationship("PedidoModel", back_populates="usuario")
+    # Esta es la única relación directa con los pedidos (el usuario tiene muchos pedidos)
+    pedidos = relationship("PedidoModel", back_populates="usuario", cascade="all, delete-orphan")
     
     # Añade esto dentro de tu clase UsuarioModel:
     @property

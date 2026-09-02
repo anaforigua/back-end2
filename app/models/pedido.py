@@ -1,17 +1,19 @@
-from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, Float
 from sqlalchemy.orm import relationship
 from app.database import Base
 
 class PedidoModel(Base):
     __tablename__ = "pedidos"
-    __allow_unmapped__ = True
+    __table_args__ = {'extend_existing': True}
 
-    id_pedidos = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    fecha = Column(DateTime, nullable=False, default=datetime.utcnow)
-    estado_pedido = Column(String, nullable=False)
-    tipo_de_pago = Column(String, nullable=False)
-    id_usuarios = Column(Integer, ForeignKey("usuario.id_usuarios"), nullable=False)
+    id_pedidos = Column(Integer, primary_key=True, index=True)
+    estado_pedido = Column(String)
+    tipo_de_pago = Column(String)
+    id_usuarios = Column(Integer, ForeignKey("usuario.id_usuarios")) # Apunta a la tabla 'usuario'
 
+    # Relación con Usuario
     usuario = relationship("UsuarioModel", back_populates="pedidos")
-    detalles_pedido = relationship("DetallePedidoModel", back_populates="pedido")
+
+    # Relación para traer los detalles del pedido
+    detalles = relationship("DetallePedidoModel", back_populates="pedido", cascade="all, delete-orphan")
+

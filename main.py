@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
 
 # Importa todos los modelos de SQLAlchemy para que Base los reconozca y cree las tablas
@@ -24,17 +25,26 @@ from app.routes import (
     roles_usuarios_route
 )
 
-# 1. Inicializar FastAPI primero para que 'app' exista antes de usarla
+# 1. Inicializar FastAPI
 app = FastAPI(title="API Backend PostgreSQL - 3 Capas", version="1.0")
 
-# 2. Crear todas las tablas en la base de datos
+# 2. Configuración de CORS para permitir la comunicación con el frontend (Vite)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# 3. Crear todas las tablas en la base de datos
 Base.metadata.create_all(bind=engine)
 
 @app.get("/")
 def read_root():
     return {"message": "Conectado a PostgreSQL y tablas creadas exitosamente"}
 
-# 3. Incluir todos los routers
+# 4. Incluir todos los routers
 app.include_router(categorias_route.router)
 app.include_router(usuario_route.router)
 app.include_router(producto_route.router)

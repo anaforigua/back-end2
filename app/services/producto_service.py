@@ -2,10 +2,9 @@ from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException, status
 from app.models.producto import ProductoModel as Producto
 from app.models.categorias import CategoriaModel as Categoria
-# Importa tu modelo de país de origen según corresponda (ejemplo: from app.models.pais import PaisModel as Pais)
 from app.models.detalle_pedido import DetallePedidoModel as DetallePedido
+from app.models.pais_de_origen import PaisDeOrigenModel as Pais
 from app.schemas.producto import ProductoCreate, ProductoUpdate
-from app.models.pais_de_origen import PaisDeOrigenModel as Pais # Asegúrate de importar el modelo de país arriba
 
 class ProductoService:
 
@@ -31,12 +30,20 @@ class ProductoService:
                 detail="❌ Categoría inexistente."
             )
 
-        # 3. No permitir asociarlo a un país de origen que no existe (Validación añadida)
-        # pais_existente = db.query(Pais).filter(Pais.id_pais == data.id_pais_de_origen).first()
-        # if not pais_existente:
-        #     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="❌ País inexistente.")
+        # 3. No permitir asociarlo a un país de origen que no existe
+        pais_existente = db.query(Pais).filter(Pais.id_pais_de_origen == data.id_pais_de_origen).first()
+        if not pais_existente:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail="❌ País inexistente."
+            )
 
-        nuevo_producto = Producto(**data.model_dump())
+        # 4. Extraer datos y mapear 'nombre_producto' -> 'nombre' si viene del esquema
+        datos_dict = data.model_dump()
+        if "nombre_producto" in datos_dict:
+            datos_dict["nombre"] = datos_dict.pop("nombre_producto")
+
+        nuevo_producto = Producto(**datos_dict)
         db.add(nuevo_producto)
         db.commit()
         db.refresh(nuevo_producto)
@@ -56,14 +63,14 @@ class ProductoService:
         )
 
     @staticmethod
-    def obtener_por_id(db: Session, producto_id: int):
+    def obtener_por_id(db: Session, productos_id: int):
         producto = (
             db.query(Producto)
             .options(
                 joinedload(Producto.categoria),
                 joinedload(Producto.pais_de_origen)
             )
-            .filter(Producto.id_productos == producto_id)
+            .filter(Producto.id_productos == productos_id)
             .first()
         )
         if not producto:
@@ -103,7 +110,20 @@ class ProductoService:
                     detail="❌ Categoría inexistente."
                 )
 
-        for key, value in data.model_dump(exclude_unset=True).items():
+        # Validar país de origen existente si se intenta modificar
+        if getattr(data, "id_pais_de_origen", None) is not None:
+            pais_existente = db.query(Pais).filter(Pais.id_pais_de_origen == data.id_pais_de_origen).first()
+            if not pais_existente:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="❌ País inexistente."
+                )
+
+        datos_dict = data.model_dump(exclude_unset=True)
+        if "nombre_producto" in datos_dict:
+            datos_dict["nombre"] = datos_dict.pop("nombre_producto")
+
+        for key, value in datos_dict.items():
             setattr(producto, key, value)
 
         db.commit()
@@ -122,7 +142,7 @@ class ProductoService:
             )
 
         # No permitir eliminar un producto si está asociado a un detalle de pedido
-        producto_en_pedidos = db.query(DetallePedido).filter(DetallePedido.id_producto == producto_id).first()
+        producto_en_pedidos = db.query(DetallePedido).filter(DetallePedido.id_productos == producto_id).first()
         if producto_en_pedidos:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
