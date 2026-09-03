@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ShoppingBag, Store, Users, 
-  ArrowRight, Package, MessageSquare, Heart, 
+  Package, MessageSquare, Heart, 
   User, LogOut, Search, Bell, PlusCircle, X, CheckCircle, Sparkles, ShieldCheck
 } from 'lucide-react';
 
@@ -57,6 +57,11 @@ export default function App() {
     }
   };
 
+  const seleccionarYContinuar = (rol) => {
+    setRolSeleccionado(rol);
+    setFlujoCompletado(true);
+  };
+
   const handleCrearProducto = async (e) => {
     e.preventDefault();
     setCreandoProducto(true);
@@ -105,7 +110,7 @@ export default function App() {
     }
   };
 
-  // --- FLUJO DE SELECCIÓN DE ROLES (MOCKUP ALTA FIDELIDAD) ---
+  // --- FLUJO DE SELECCIÓN DE ROLES ---
   if (!flujoCompletado) {
     return (
       <div className="min-h-screen bg-[#101626] text-slate-100 flex flex-col justify-center items-center p-6 relative overflow-hidden font-sans">
@@ -129,20 +134,16 @@ export default function App() {
             </span>
           </h1>
           <p className="text-sm text-slate-400 mt-3 max-w-md mx-auto">
-            Selecciona tu perfil principal para personalizar tu experiencia. Puedes cambiar o añadir roles en cualquier momento.
+            Selecciona tu perfil principal para ingresar directamente a tu panel.
           </p>
         </div>
 
-        {/* Tarjetas de Selección */}
+        {/* Tarjetas de Selección Directa */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full z-10">
           {/* Card COMPRADOR */}
           <div 
-            onClick={() => setRolSeleccionado('COMPRADOR')}
-            className={`bg-[#1A2440]/80 backdrop-blur-xl rounded-3xl p-7 border-2 transition-all duration-300 cursor-pointer flex flex-col justify-between items-center text-center relative group shadow-2xl ${
-              rolSeleccionado === 'COMPRADOR' 
-                ? 'border-[#6A3FA6] bg-[#1E2D59] scale-105 shadow-[#6A3FA6]/20 ring-4 ring-[#6A3FA6]/20' 
-                : 'border-slate-800/80 hover:border-[#6A3FA6]/50 hover:bg-[#1A2440]'
-            }`}
+            onClick={() => seleccionarYContinuar('COMPRADOR')}
+            className="bg-[#1A2440]/80 backdrop-blur-xl rounded-3xl p-7 border-2 border-slate-800/80 hover:border-[#6A3FA6] hover:bg-[#1E2D59] hover:scale-105 hover:shadow-[#6A3FA6]/20 transition-all duration-300 cursor-pointer flex flex-col justify-between items-center text-center relative group shadow-2xl"
           >
             <div className="p-4 bg-[#6A3FA6]/10 border border-[#6A3FA6]/30 text-[#6A3FA6] rounded-2xl mb-5 group-hover:scale-110 transition-transform">
               <ShoppingBag className="w-8 h-8" />
@@ -153,23 +154,15 @@ export default function App() {
                 Explora productos de segunda mano, realiza compras seguras y gestiona tus pedidos fácilmente.
               </p>
             </div>
-            <button className={`mt-6 w-full py-3 px-4 rounded-xl font-bold text-xs transition-all ${
-              rolSeleccionado === 'COMPRADOR'
-                ? 'bg-[#6A3FA6] text-white shadow-lg shadow-[#6A3FA6]/30'
-                : 'bg-[#1E2D59]/60 text-slate-300 group-hover:bg-[#6A3FA6] group-hover:text-white'
-            }`}>
+            <button className="mt-6 w-full py-3 px-4 rounded-xl font-bold text-xs bg-[#1E2D59]/60 text-slate-300 group-hover:bg-[#6A3FA6] group-hover:text-white transition-all">
               Quiero Comprar
             </button>
           </div>
 
           {/* Card AMBOS (RECOMENDADO) */}
           <div 
-            onClick={() => setRolSeleccionado('AMBOS')}
-            className={`bg-[#1A2440]/80 backdrop-blur-xl rounded-3xl p-7 border-2 transition-all duration-300 cursor-pointer flex flex-col justify-between items-center text-center relative group shadow-2xl ${
-              rolSeleccionado === 'AMBOS' 
-                ? 'border-[#6A3FA6] bg-[#1E2D59] scale-105 shadow-[#6A3FA6]/30 ring-4 ring-[#6A3FA6]/20' 
-                : 'border-[#263173] hover:border-[#6A3FA6]/60 hover:bg-[#1A2440]'
-            }`}
+            onClick={() => seleccionarYContinuar('AMBOS')}
+            className="bg-[#1A2440]/80 backdrop-blur-xl rounded-3xl p-7 border-2 border-[#263173] hover:border-[#6A3FA6] hover:bg-[#1E2D59] hover:scale-105 hover:shadow-[#6A3FA6]/30 transition-all duration-300 cursor-pointer flex flex-col justify-between items-center text-center relative group shadow-2xl"
           >
             <span className="absolute -top-3.5 bg-gradient-to-r from-[#6A3FA6] to-[#263173] text-white text-[10px] font-extrabold tracking-widest uppercase px-4 py-1.5 rounded-full shadow-lg border border-purple-400/30 flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-yellow-300" /> Más recomendado
@@ -183,23 +176,15 @@ export default function App() {
                 Acceso completo a todas las funciones. Compra e inventaria artículos de segunda mano sin restricciones.
               </p>
             </div>
-            <button className={`mt-6 w-full py-3 px-4 rounded-xl font-bold text-xs transition-all ${
-              rolSeleccionado === 'AMBOS'
-                ? 'bg-gradient-to-r from-[#6A3FA6] to-[#263173] text-white shadow-lg shadow-[#6A3FA6]/30'
-                : 'bg-[#1E2D59] text-indigo-200 group-hover:bg-[#6A3FA6] group-hover:text-white'
-            }`}>
+            <button className="mt-6 w-full py-3 px-4 rounded-xl font-bold text-xs bg-[#1E2D59] text-indigo-200 group-hover:bg-gradient-to-r group-hover:from-[#6A3FA6] group-hover:to-[#263173] group-hover:text-white transition-all">
               Quiero Comprar y Vender
             </button>
           </div>
 
           {/* Card VENDEDOR */}
           <div 
-            onClick={() => setRolSeleccionado('VENDEDOR')}
-            className={`bg-[#1A2440]/80 backdrop-blur-xl rounded-3xl p-7 border-2 transition-all duration-300 cursor-pointer flex flex-col justify-between items-center text-center relative group shadow-2xl ${
-              rolSeleccionado === 'VENDEDOR' 
-                ? 'border-[#6A3FA6] bg-[#1E2D59] scale-105 shadow-[#6A3FA6]/20 ring-4 ring-[#6A3FA6]/20' 
-                : 'border-slate-800/80 hover:border-[#6A3FA6]/50 hover:bg-[#1A2440]'
-            }`}
+            onClick={() => seleccionarYContinuar('VENDEDOR')}
+            className="bg-[#1A2440]/80 backdrop-blur-xl rounded-3xl p-7 border-2 border-slate-800/80 hover:border-[#6A3FA6] hover:bg-[#1E2D59] hover:scale-105 hover:shadow-[#6A3FA6]/20 transition-all duration-300 cursor-pointer flex flex-col justify-between items-center text-center relative group shadow-2xl"
           >
             <div className="p-4 bg-[#263173]/30 border border-[#263173]/50 text-indigo-400 rounded-2xl mb-5 group-hover:scale-110 transition-transform">
               <Store className="w-8 h-8" />
@@ -210,33 +195,16 @@ export default function App() {
                 Publica artículos de segunda mano, gestiona tu stock y vende a miles de clientes activos.
               </p>
             </div>
-            <button className={`mt-6 w-full py-3 px-4 rounded-xl font-bold text-xs transition-all ${
-              rolSeleccionado === 'VENDEDOR'
-                ? 'bg-[#6A3FA6] text-white shadow-lg shadow-[#6A3FA6]/30'
-                : 'bg-[#1E2D59]/60 text-slate-300 group-hover:bg-[#6A3FA6] group-hover:text-white'
-            }`}>
+            <button className="mt-6 w-full py-3 px-4 rounded-xl font-bold text-xs bg-[#1E2D59]/60 text-slate-300 group-hover:bg-[#6A3FA6] group-hover:text-white transition-all">
               Quiero Vender
             </button>
           </div>
         </div>
-
-        {/* Botón de Acción Principal */}
-        <button
-          disabled={!rolSeleccionado}
-          onClick={() => setFlujoCompletado(true)}
-          className={`mt-12 px-10 py-4 rounded-2xl font-extrabold text-sm transition-all flex items-center gap-3 z-10 shadow-xl ${
-            rolSeleccionado
-              ? 'bg-gradient-to-r from-[#6A3FA6] to-[#263173] text-white hover:opacity-90 shadow-[#6A3FA6]/20 cursor-pointer scale-100 hover:scale-105'
-              : 'bg-slate-800 text-slate-600 cursor-not-allowed'
-          }`}
-        >
-          Continuar al Dashboard <ArrowRight className="w-4 h-4" />
-        </button>
       </div>
     );
   }
 
-  // --- DASHBOARD PRINCIPAL (CON PALETA PERSONALIZADA) ---
+  // --- DASHBOARD PRINCIPAL ---
   return (
     <div className="flex h-screen bg-[#101626] font-sans text-slate-200 relative overflow-hidden">
       {/* Sidebar Lateral */}
@@ -271,19 +239,26 @@ export default function App() {
             </div>
           </div>
 
-          {/* Menú de Navegación */}
+          {/* Menú de Navegación Condicional */}
           <nav className="space-y-1.5">
             <a href="#inicio" className="flex items-center gap-3 px-3.5 py-3 rounded-xl bg-[#6A3FA6] text-white font-bold text-xs shadow-lg shadow-[#6A3FA6]/20 transition-all">
               <Store className="w-4 h-4" /> Inicio
             </a>
+
+            {/* Renderizado Condicional: Solo VENDEDOR o AMBOS */}
             {(rolSeleccionado === 'VENDEDOR' || rolSeleccionado === 'AMBOS') && (
               <a href="#mis-productos" className="flex items-center gap-3 px-3.5 py-3 rounded-xl text-slate-400 hover:bg-[#1A2440] hover:text-white transition-all text-xs font-semibold">
                 <Package className="w-4 h-4" /> Mis Productos
               </a>
             )}
-            <a href="#mis-pedidos" className="flex items-center gap-3 px-3.5 py-3 rounded-xl text-slate-400 hover:bg-[#1A2440] hover:text-white transition-all text-xs font-semibold">
-              <ShoppingBag className="w-4 h-4" /> Mis Pedidos
-            </a>
+
+            {/* Renderizado Condicional: Solo COMPRADOR o AMBOS */}
+            {(rolSeleccionado === 'COMPRADOR' || rolSeleccionado === 'AMBOS') && (
+              <a href="#mis-pedidos" className="flex items-center gap-3 px-3.5 py-3 rounded-xl text-slate-400 hover:bg-[#1A2440] hover:text-white transition-all text-xs font-semibold">
+                <ShoppingBag className="w-4 h-4" /> Mis Pedidos
+              </a>
+            )}
+
             <a href="#mensajes" className="flex items-center justify-between px-3.5 py-3 rounded-xl text-slate-400 hover:bg-[#1A2440] hover:text-white transition-all text-xs font-semibold">
               <span className="flex items-center gap-3"><MessageSquare className="w-4 h-4" /> Mensajes</span>
               <span className="bg-[#6A3FA6] text-white text-[10px] px-2 py-0.5 rounded-full font-bold">3</span>
@@ -299,7 +274,7 @@ export default function App() {
 
         <button 
           onClick={() => setFlujoCompletado(false)}
-          className="flex items-center gap-3 px-3.5 py-3 rounded-xl text-rose-400 hover:bg-rose-500/10 transition-all w-full font-semibold text-xs"
+          className="flex items-center gap-3 px-3.5 py-3 rounded-xl text-rose-400 hover:bg-rose-500/10 transition-all w-full font-semibold text-xs cursor-pointer"
         >
           <LogOut className="w-4 h-4" /> Salir / Cambiar Rol
         </button>
@@ -517,7 +492,7 @@ export default function App() {
                 <button 
                   type="button"
                   onClick={() => setModalAbierto(false)}
-                  className="px-4 py-2.5 font-bold text-slate-300 bg-[#1E2D59] hover:bg-slate-700 rounded-xl transition-all"
+                  className="px-4 py-2.5 font-bold text-slate-300 bg-[#1E2D59] hover:bg-slate-700 rounded-xl transition-all cursor-pointer"
                 >
                   Cancelar
                 </button>
