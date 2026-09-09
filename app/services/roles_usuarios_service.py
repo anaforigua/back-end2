@@ -1,8 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
-from app.models.roles_usuarios import RolUsuarioModel as RolUsuario  # Ajusta según tu modelo real
+from app.models.roles_usuarios import RolUsuarioModel as RolUsuario
 from app.models.usuario import UsuarioModel as Usuario
-# Asegúrate de importar tu modelo de rol real (ej: from app.models.rol import Rol as Rol)
 from app.schemas.roles_usuarios import RolUsuarioCreate, RolUsuarioUpdate
 
 class RolUsuarioService:
@@ -17,15 +16,7 @@ class RolUsuarioService:
                 detail="❌ Usuario inexistente."
             )
 
-        # 2. Validar que el rol exista (ajusta el filtro según tu modelo de rol)
-        # rol_existente = db.query(Rol).filter(Rol.id_rol == data.id_rol).first()
-        # if not rol_existente:
-        #     raise HTTPException(
-        #         status_code=status.HTTP_404_NOT_FOUND,
-        #         detail="❌ Rol inexistente."
-        #     )
-
-        # 3. Validar si ya existe esta asignación para evitar duplicados
+        # 2. Validar si ya existe esta asignación para evitar duplicados
         asignacion_existente = db.query(RolUsuario).filter(
             RolUsuario.id_usuario == data.id_usuario,
             RolUsuario.id_rol == data.id_rol

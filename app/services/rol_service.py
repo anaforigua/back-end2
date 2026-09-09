@@ -35,7 +35,7 @@ class RolService:
                 detail="El rol ya se encuentra registrado."
             )
 
-        nuevo_rol = Rol(**data.dict())
+        nuevo_rol = Rol(**data.model_dump())
         db.add(nuevo_rol)
         db.commit()
         db.refresh(nuevo_rol)
@@ -47,7 +47,7 @@ class RolService:
 
     @staticmethod
     def obtener_por_id(db: Session, rol_id: int):
-        rol = db.query(Rol).filter(Rol.id == rol_id).first()
+        rol = db.query(Rol).filter(Rol.id_rol == rol_id).first()
         if not rol:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -74,7 +74,7 @@ class RolService:
                         detail="Ya existe un rol de Administrador en el sistema."
                     )
 
-        for key, value in data.dict(exclude_unset=True).items():
+        for key, value in data.model_dump(exclude_unset=True).items():
             setattr(rol, key, value)
             
         db.commit()

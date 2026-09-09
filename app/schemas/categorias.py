@@ -29,5 +29,7 @@ class CategoriaUpdate(BaseModel):
         return v
 
 class CategoriaRead(CategoriaBase):
+    id_categoria: int
+
     class Config:
         from_attributes = True

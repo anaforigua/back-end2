@@ -6,7 +6,6 @@ from app.schemas.categorias import CategoriaCreate, CategoriaUpdate
 class CategoriaService:
     @staticmethod
     def crear(db: Session, data: CategoriaCreate) -> CategoriaModel:
-        # Validación añadida: Verificar si la categoría ya existe en la base de datos
         categoria_existente = db.query(CategoriaModel).filter(CategoriaModel.nombre_categoria == data.nombre_categoria).first()
         if categoria_existente:
             raise HTTPException(

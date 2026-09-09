@@ -82,7 +82,7 @@ class PedidoService:
             })
 
         # RB07 — Estado inicial PENDIENTE por defecto
-        pedido_data = data.model_dump(exclude={"detalles", "fecha", "total"})
+        pedido_data = data.model_dump(exclude={"detalles", "fecha"})
         if not pedido_data.get("estado_pedido"):
             pedido_data["estado_pedido"] = "PENDIENTE"
 

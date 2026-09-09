@@ -6,7 +6,7 @@ class DetallePedidoBase(BaseModel):
     cantidad: int
     id_productos: int
     precio_unitario: Optional[float] = None
-    subtotal: Optional[float] = 0.0  # Optional con valor por defecto para que no exija mandarlo en el JSON
+    subtotal: Optional[float] = 0.0
 
 class DetallePedidoCreate(DetallePedidoBase):
     pass

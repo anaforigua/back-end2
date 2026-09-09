@@ -18,7 +18,7 @@ class ProductoModel(Base):
     fecha_publicacion = Column(DateTime, nullable=False, default=datetime.utcnow)
     id_categoria = Column(Integer, ForeignKey("categorias.id_categoria"), nullable=False)
     
-    # Aquí cambiamos a "pais_de_origen" en singular para que coincida con el nombre de la tabla
+    # Clave foránea al país de origen
     id_pais_de_origen = Column(Integer, ForeignKey("pais_de_origen.id_pais_de_origen"), nullable=False)
 
     # Relaciones explícitas con primaryjoin

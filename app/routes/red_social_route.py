@@ -6,22 +6,42 @@ from app.services.red_social_service import RedSocialService
 
 router = APIRouter(prefix="/redes-sociales", tags=["Redes Sociales"])
 
-@router.post("/", response_model=RedSocialRead, status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED)
 def crear_red_social(data: RedSocialCreate, db: Session = Depends(get_db)):
-    return RedSocialService.crear(db, data)
+    red_social = RedSocialService.crear(db, data)
+    return {
+        "mensaje": "Red social creada exitosamente",
+        "data": red_social
+    }
 
-@router.get("/", response_model=list[RedSocialRead])
+@router.get("/")
 def listar_redes_sociales(db: Session = Depends(get_db)):
-    return RedSocialService.obtener_todos(db)
+    redes_sociales = RedSocialService.obtener_todos(db)
+    return {
+        "mensaje": "Redes sociales listadas exitosamente",
+        "data": redes_sociales
+    }
 
-@router.get("/{id_red_social}", response_model=RedSocialRead)
+@router.get("/{id_red_social}")
 def obtener_red_social(id_red_social: int, db: Session = Depends(get_db)):
-    return RedSocialService.obtener_por_id(db, id_red_social)
+    red_social = RedSocialService.obtener_por_id(db, id_red_social)
+    return {
+        "mensaje": "Red social encontrada",
+        "data": red_social
+    }
 
-@router.put("/{id_red_social}", response_model=RedSocialRead)
+@router.put("/{id_red_social}")
 def actualizar_red_social(id_red_social: int, data: RedSocialUpdate, db: Session = Depends(get_db)):
-    return RedSocialService.actualizar(db, id_red_social, data)
+    red_social = RedSocialService.actualizar(db, id_red_social, data)
+    return {
+        "mensaje": "Red social actualizada exitosamente",
+        "data": red_social
+    }
 
 @router.delete("/{id_red_social}")
 def eliminar_red_social(id_red_social: int, db: Session = Depends(get_db)):
-    return RedSocialService.eliminar(db, id_red_social)
+    resultado = RedSocialService.eliminar(db, id_red_social)
+    return {
+        "mensaje": "Red social eliminada exitosamente",
+        "data": resultado
+    }

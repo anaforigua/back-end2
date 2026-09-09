@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from app.models.usuario import UsuarioModel
-from app.models.roles_usuarios import RolUsuarioModel  # Asegúrate de importar tu modelo de la tabla intermedia
+from app.models.roles_usuarios import RolUsuarioModel
 from app.schemas.usuario import UsuarioCreate, UsuarioUpdate
 
 class UsuarioService:
@@ -54,6 +54,14 @@ class UsuarioService:
         # Excluimos id_roles del volcado directo de atributos del usuario
         datos_actualizacion = data.model_dump(exclude_unset=True, exclude={"id_roles"})
         
+        # Validación de la contraseña en la actualización (sin encriptar)
+        if "contrasena" in datos_actualizacion and datos_actualizacion["contrasena"]:
+            if datos_actualizacion["contrasena"] == db_item.contrasena:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="La nueva contraseña no puede ser igual a la anterior."
+                )
+        
         for key, value in datos_actualizacion.items():
             setattr(db_item, key, value)
             
@@ -78,8 +86,6 @@ class UsuarioService:
     def eliminar(db: Session, id_usuarios: int) -> dict:
         db_item = UsuarioService.obtener_por_id(db, id_usuarios)
         
-        # Opcional por seguridad si no tienes cascada en la BD: 
-        # limpiar primero los registros de la tabla intermedia
         db.query(RolUsuarioModel).filter(RolUsuarioModel.id_usuario == id_usuarios).delete()
         
         db.delete(db_item)

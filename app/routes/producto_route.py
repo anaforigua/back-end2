@@ -6,22 +6,42 @@ from app.services.producto_service import ProductoService
 
 router = APIRouter(prefix="/productos", tags=["Productos"])
 
-@router.post("/", response_model=ProductoRead, status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED)
 def crear_producto(data: ProductoCreate, db: Session = Depends(get_db)):
-    return ProductoService.crear(db, data)
+    producto = ProductoService.crear(db, data)
+    return {
+        "mensaje": "Producto creado exitosamente",
+        "data": producto
+    }
 
-@router.get("/", response_model=list[ProductoRead])
+@router.get("/")
 def listar_productos(db: Session = Depends(get_db)):
-    return ProductoService.obtener_todos(db)
+    productos = ProductoService.obtener_todos(db)
+    return {
+        "mensaje": "Productos listados exitosamente",
+        "data": productos
+    }
 
-@router.get("/{id_productos}", response_model=ProductoRead)
+@router.get("/{id_productos}")
 def obtener_producto(id_productos: int, db: Session = Depends(get_db)):
-    return ProductoService.obtener_por_id(db, id_productos)
+    producto = ProductoService.obtener_por_id(db, id_productos)
+    return {
+        "mensaje": "Producto encontrado",
+        "data": producto
+    }
 
-@router.put("/{id_productos}", response_model=ProductoRead)
+@router.put("/{id_productos}")
 def actualizar_producto(id_productos: int, data: ProductoUpdate, db: Session = Depends(get_db)):
-    return ProductoService.actualizar(db, id_productos, data)
+    producto = ProductoService.actualizar(db, id_productos, data)
+    return {
+        "mensaje": "Producto actualizado exitosamente",
+        "data": producto
+    }
 
 @router.delete("/{id_productos}")
 def eliminar_producto(id_productos: int, db: Session = Depends(get_db)):
-    return ProductoService.eliminar(db, id_productos)
+    resultado = ProductoService.eliminar(db, id_productos)
+    return {
+        "mensaje": "Producto eliminado exitosamente",
+        "data": resultado
+    }

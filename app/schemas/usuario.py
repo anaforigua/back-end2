@@ -15,6 +15,7 @@ class UsuarioBase(BaseModel):
     biografía: str
     ubicación: str
     email: str = Field(..., description="Correo electrónico obligatorio")
+    contrasena: str = Field(..., min_length=6, description="Contraseña obligatoria")
     calificacion: float
     estado_usuario: str
     id_roles: List[int]
@@ -54,6 +55,7 @@ class UsuarioUpdate(BaseModel):
     biografía: Optional[str] = None
     ubicación: Optional[str] = None
     email: Optional[str] = None
+    contrasena: Optional[str] = None
     calificacion: Optional[float] = None
     estado_usuario: Optional[str] = None
     id_roles: Optional[List[int]] = None

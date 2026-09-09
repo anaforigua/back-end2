@@ -10,5 +10,4 @@ class CategoriaModel(Base):
     descripcion = Column(Text, nullable=False)
     icono_categoria = Column(String(120), nullable=False)
 
-    # Relación opcional con productos si aplica
     productos = relationship("ProductoModel", back_populates="categoria")
