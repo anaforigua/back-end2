@@ -9,8 +9,11 @@ class UsuarioModel(Base):
     nombre = Column(String, nullable=False)
     apellidos = Column(String, nullable=False)
     avatar = Column(String, nullable=False)
-    biografía = Column(Text, nullable=False)
-    ubicación = Column(String, nullable=False)
+    
+    # Nombres limpios sincronizados con PostgreSQL
+    biografia = Column(Text, nullable=False)
+    ubicacion = Column(String, nullable=False)
+    
     email = Column(String, unique=True, index=True, nullable=False)
     contrasena = Column(String, nullable=False)
     calificacion = Column(Float, default=0.0)
@@ -21,4 +24,6 @@ class UsuarioModel(Base):
     
     @property
     def roles(self):
-        return [ru.rol for ru in self.roles_usuarios if ru.rol]
+        if not self.roles_usuarios:
+            return []
+        return [ru.rol for ru in self.roles_usuarios if getattr(ru, 'rol', None) is not None]

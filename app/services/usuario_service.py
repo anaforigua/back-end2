@@ -7,7 +7,6 @@ from app.schemas.usuario import UsuarioCreate, UsuarioUpdate
 class UsuarioService:
     @staticmethod
     def crear(db: Session, data: UsuarioCreate) -> UsuarioModel:
-        # Validación añadida: Verificar si el correo ya está registrado en la base de datos
         correo_existente = db.query(UsuarioModel).filter(UsuarioModel.email == data.email).first()
         if correo_existente:
             raise HTTPException(
@@ -15,7 +14,6 @@ class UsuarioService:
                 detail="El correo repetido no está permitido."
             )
 
-        # 1. Separamos los datos básicos del usuario excluyendo los id_roles
         datos_usuario = data.model_dump(exclude={"id_roles"})
         db_item = UsuarioModel(**datos_usuario)
         
@@ -23,7 +21,6 @@ class UsuarioService:
         db.commit()
         db.refresh(db_item)
 
-        # 2. Registramos los roles en la entidad intermedia RolUsuarioModel
         if data.id_roles:
             for rol_id in data.id_roles:
                 nuevo_rol_usuario = RolUsuarioModel(
@@ -51,10 +48,8 @@ class UsuarioService:
     def actualizar(db: Session, id_usuarios: int, data: UsuarioUpdate) -> UsuarioModel:
         db_item = UsuarioService.obtener_por_id(db, id_usuarios)
         
-        # Excluimos id_roles del volcado directo de atributos del usuario
         datos_actualizacion = data.model_dump(exclude_unset=True, exclude={"id_roles"})
         
-        # Validación de la contraseña en la actualización (sin encriptar)
         if "contrasena" in datos_actualizacion and datos_actualizacion["contrasena"]:
             if datos_actualizacion["contrasena"] == db_item.contrasena:
                 raise HTTPException(
@@ -65,12 +60,9 @@ class UsuarioService:
         for key, value in datos_actualizacion.items():
             setattr(db_item, key, value)
             
-        # Si se envían nuevos roles en la actualización, actualizamos la tabla intermedia
         if data.id_roles is not None:
-            # Eliminamos los roles anteriores asociados a este usuario
             db.query(RolUsuarioModel).filter(RolUsuarioModel.id_usuario == id_usuarios).delete()
             
-            # Insertamos los nuevos roles
             for rol_id in data.id_roles:
                 nuevo_rol_usuario = RolUsuarioModel(
                     id_usuario=id_usuarios,
