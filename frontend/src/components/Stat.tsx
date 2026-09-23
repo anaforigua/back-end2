@@ -1,6 +1,11 @@
 import React from "react";
 
-export function Stat({ label, value }) {
+interface StatProps {
+  label: string;
+  value: string | number;
+}
+
+export function Stat({ label, value }: StatProps) {
   return (
     <div className="card stat">
       <span className="muted">{label}</span>
