@@ -10,6 +10,8 @@ router = APIRouter(prefix="/paises-de-origen", tags=["Países de Origen"])
 def crear_pais(data: PaisDeOrigenCreate, db: Session = Depends(get_db)):
     pais = PaisDeOrigenService.crear(db, data)
     return {
+        "status": "success",
+        "code": status.HTTP_201_CREATED,
         "mensaje": "País de origen creado exitosamente",
         "data": pais
     }
@@ -18,6 +20,8 @@ def crear_pais(data: PaisDeOrigenCreate, db: Session = Depends(get_db)):
 def listar_paises(db: Session = Depends(get_db)):
     paises = PaisDeOrigenService.obtener_todos(db)
     return {
+        "status": "success",
+        "code": status.HTTP_200_OK,
         "mensaje": "Países de origen listados exitosamente",
         "data": paises
     }
@@ -26,6 +30,8 @@ def listar_paises(db: Session = Depends(get_db)):
 def obtener_pais(id_pais_de_origen: int, db: Session = Depends(get_db)):
     pais = PaisDeOrigenService.obtener_por_id(db, id_pais_de_origen)
     return {
+        "status": "success",
+        "code": status.HTTP_200_OK,
         "mensaje": "País de origen encontrado",
         "data": pais
     }
@@ -34,6 +40,8 @@ def obtener_pais(id_pais_de_origen: int, db: Session = Depends(get_db)):
 def actualizar_pais(id_pais_de_origen: int, data: PaisDeOrigenUpdate, db: Session = Depends(get_db)):
     pais = PaisDeOrigenService.actualizar(db, id_pais_de_origen, data)
     return {
+        "status": "success",
+        "code": status.HTTP_200_OK,
         "mensaje": "País de origen actualizado exitosamente",
         "data": pais
     }
@@ -42,6 +50,8 @@ def actualizar_pais(id_pais_de_origen: int, data: PaisDeOrigenUpdate, db: Sessio
 def eliminar_pais(id_pais_de_origen: int, db: Session = Depends(get_db)):
     resultado = PaisDeOrigenService.eliminar(db, id_pais_de_origen)
     return {
+        "status": "success",
+        "code": status.HTTP_200_OK,
         "mensaje": "País de origen eliminado exitosamente",
         "data": resultado
     }

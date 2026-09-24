@@ -10,6 +10,8 @@ router = APIRouter(prefix="/categorias", tags=["Categorias"])
 def crear_categoria(data: CategoriaCreate, db: Session = Depends(get_db)):
     categoria = CategoriaService.crear(db, data)
     return {
+        "status": "success",
+        "code": status.HTTP_201_CREATED,
         "mensaje": "Categoría creada exitosamente",
         "data": categoria
     }
@@ -18,6 +20,8 @@ def crear_categoria(data: CategoriaCreate, db: Session = Depends(get_db)):
 def listar_categorias(db: Session = Depends(get_db)):
     categorias = CategoriaService.listar(db)
     return {
+        "status": "success",
+        "code": status.HTTP_200_OK,
         "mensaje": "Categorías listadas exitosamente",
         "data": categorias
     }
@@ -26,6 +30,8 @@ def listar_categorias(db: Session = Depends(get_db)):
 def obtener_categoria(id_categoria: int, db: Session = Depends(get_db)):
     categoria = CategoriaService.obtener_por_id(db, id_categoria)
     return {
+        "status": "success",
+        "code": status.HTTP_200_OK,
         "mensaje": "Categoría encontrada",
         "data": categoria
     }
@@ -34,6 +40,8 @@ def obtener_categoria(id_categoria: int, db: Session = Depends(get_db)):
 def actualizar_categoria(id_categoria: int, data: CategoriaUpdate, db: Session = Depends(get_db)):
     categoria = CategoriaService.actualizar(db, id_categoria, data)
     return {
+        "status": "success",
+        "code": status.HTTP_200_OK,
         "mensaje": "Categoría actualizada exitosamente",
         "data": categoria
     }
@@ -42,6 +50,8 @@ def actualizar_categoria(id_categoria: int, data: CategoriaUpdate, db: Session =
 def eliminar_categoria(id_categoria: int, db: Session = Depends(get_db)):
     resultado = CategoriaService.eliminar(db, id_categoria)
     return {
+        "status": "success",
+        "code": status.HTTP_200_OK,
         "mensaje": "Categoría eliminada exitosamente",
         "data": resultado
     }

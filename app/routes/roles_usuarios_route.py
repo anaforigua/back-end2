@@ -12,6 +12,8 @@ router = APIRouter(prefix="/roles-usuarios", tags=["Roles Usuarios"])
 def crear_rol_usuario(data: RolUsuarioCreate, db: Session = Depends(get_db)):
     rol_usuario = RolUsuarioService.crear(db=db, data=data)
     return {
+        "status": "success",
+        "code": status.HTTP_201_CREATED,
         "mensaje": "Rol de usuario creado exitosamente",
         "data": rol_usuario
     }
@@ -20,6 +22,8 @@ def crear_rol_usuario(data: RolUsuarioCreate, db: Session = Depends(get_db)):
 def listar_roles_usuarios(db: Session = Depends(get_db)):
     roles_usuarios = RolUsuarioService.obtener_todos(db=db)
     return {
+        "status": "success",
+        "code": status.HTTP_200_OK,
         "mensaje": "Roles de usuarios listados exitosamente",
         "data": roles_usuarios
     }
@@ -28,6 +32,8 @@ def listar_roles_usuarios(db: Session = Depends(get_db)):
 def obtener_rol_usuario(id_rol_usuario: int, db: Session = Depends(get_db)):
     rol_usuario = RolUsuarioService.obtener_por_id(db=db, id_rol_usuario=id_rol_usuario)
     return {
+        "status": "success",
+        "code": status.HTTP_200_OK,
         "mensaje": "Rol de usuario encontrado",
         "data": rol_usuario
     }
@@ -36,6 +42,8 @@ def obtener_rol_usuario(id_rol_usuario: int, db: Session = Depends(get_db)):
 def actualizar_rol_usuario(id_rol_usuario: int, data: RolUsuarioUpdate, db: Session = Depends(get_db)):
     rol_usuario = RolUsuarioService.actualizar(db=db, id_rol_usuario=id_rol_usuario, data=data)
     return {
+        "status": "success",
+        "code": status.HTTP_200_OK,
         "mensaje": "Rol de usuario actualizado exitosamente",
         "data": rol_usuario
     }
@@ -44,6 +52,8 @@ def actualizar_rol_usuario(id_rol_usuario: int, data: RolUsuarioUpdate, db: Sess
 def eliminar_rol_usuario(id_rol_usuario: int, db: Session = Depends(get_db)):
     resultado = RolUsuarioService.eliminar(db=db, id_rol_usuario=id_rol_usuario)
     return {
+        "status": "success",
+        "code": status.HTTP_200_OK,
         "mensaje": "Rol de usuario eliminado exitosamente",
         "data": resultado
     }

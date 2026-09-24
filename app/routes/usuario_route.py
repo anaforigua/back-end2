@@ -11,6 +11,8 @@ router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
 async def crear_usuario(data: UsuarioCreate, db: Session = Depends(get_db)):
     usuario = UsuarioService.crear(db, data)
     return {
+        "status": "success",
+        "code": status.HTTP_201_CREATED,
         "mensaje": "Usuario creado exitosamente",
         "data": UsuarioRead.model_validate(usuario)
     }
@@ -19,6 +21,8 @@ async def crear_usuario(data: UsuarioCreate, db: Session = Depends(get_db)):
 async def listar_usuarios(db: Session = Depends(get_db)):
     usuarios = UsuarioService.obtener_todos(db)
     return {
+        "status": "success",
+        "code": status.HTTP_200_OK, 
         "mensaje": "Usuarios listados exitosamente",
         "data": [UsuarioRead.model_validate(u) for u in usuarios]
     }
@@ -27,6 +31,8 @@ async def listar_usuarios(db: Session = Depends(get_db)):
 async def obtener_usuario(id_usuarios: int, db: Session = Depends(get_db)):
     usuario = UsuarioService.obtener_por_id(db, id_usuarios)
     return {
+        "status": "success",
+        "code": status.HTTP_200_OK,
         "mensaje": "Usuario encontrado",
         "data": UsuarioRead.model_validate(usuario)
     }
@@ -35,6 +41,8 @@ async def obtener_usuario(id_usuarios: int, db: Session = Depends(get_db)):
 async def actualizar_usuario(id_usuarios: int, data: UsuarioUpdate, db: Session = Depends(get_db)):
     usuario = UsuarioService.actualizar(db, id_usuarios, data)
     return {
+        "status": "success",
+        "code": status.HTTP_200_OK,
         "mensaje": "Usuario actualizado exitosamente",
         "data": UsuarioRead.model_validate(usuario)
     }
@@ -43,6 +51,8 @@ async def actualizar_usuario(id_usuarios: int, data: UsuarioUpdate, db: Session 
 async def eliminar_usuario(id_usuarios: int, db: Session = Depends(get_db)):
     resultado = UsuarioService.eliminar(db, id_usuarios)
     return {
+        "status": "success",
+        "code": status.HTTP_200_OK,
         "mensaje": "Usuario eliminado exitosamente",
         "data": resultado
     }
