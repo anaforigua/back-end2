@@ -1,12 +1,12 @@
-const API_URL = "http://127.0.0.1:8000"; // URL de tu backend FastAPI
+const API_URL = "http://127.0.0.1:8000";
 
-export async function request(endpoint, options = {}) {
+export async function request(endpoint: string, options: RequestInit = {}) {
   const token = localStorage.getItem("revenfy_token");
-  
-  const headers = {
+
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(options.headers || {}),
+    ...(options.headers as Record<string, string> || {}),
   };
 
   const response = await fetch(`${API_URL}${endpoint}`, {
@@ -19,7 +19,6 @@ export async function request(endpoint, options = {}) {
     throw new Error(errorData.detail || "Ocurrió un error en la solicitud");
   }
 
-  // Si la respuesta no tiene contenido (ej. 204 No Content)
   if (response.status === 204) return null;
   return response.json();
 }
