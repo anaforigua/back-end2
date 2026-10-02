@@ -11,7 +11,6 @@ def crear_rol(data: RolCreate, db: Session = Depends(get_db)):
     rol = RolService.crear(db, data)
     return {
         "status": "success",
-        "code": status.HTTP_201_CREATED,
         "mensaje": "Rol creado exitosamente",
         "data": rol
     }
@@ -21,7 +20,6 @@ def listar_roles(db: Session = Depends(get_db)):
     roles = RolService.obtener_todos(db)
     return {
         "status": "success",
-        "code": status.HTTP_200_OK,
         "mensaje": "Roles listados exitosamente",
         "data": roles
     }
@@ -31,7 +29,6 @@ def obtener_rol(rol_id: int, db: Session = Depends(get_db)):
     rol = RolService.obtener_por_id(db, rol_id)
     return {
         "status": "success",
-        "code": status.HTTP_200_OK,
         "mensaje": "Rol encontrado",
         "data": rol
     }
@@ -41,7 +38,6 @@ def actualizar_rol(rol_id: int, data: RolUpdate, db: Session = Depends(get_db)):
     rol = RolService.actualizar(db, rol_id, data)
     return {
         "status": "success",
-        "code": status.HTTP_200_OK,
         "mensaje": "Rol actualizado exitosamente",
         "data": rol
     }
@@ -51,7 +47,6 @@ def eliminar_rol(rol_id: int, db: Session = Depends(get_db)):
     resultado = RolService.eliminar(db, rol_id)
     return {
         "status": "success",
-        "code": status.HTTP_200_OK,
         "mensaje": "Rol eliminado exitosamente",
         "data": resultado
     }

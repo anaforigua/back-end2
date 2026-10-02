@@ -1,5 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
 from app.database import engine, Base
 
 # Importa todos los modelos de SQLAlchemy para que Base los reconozca y cree las tablas
@@ -26,25 +28,46 @@ from app.routes import (
 )
 
 # 1. Inicializar FastAPI
-app = FastAPI(title="API Backend PostgreSQL - 3 Capas", version="1.0")
+app = FastAPI(
+    title="API Backend PostgreSQL - 3 Capas",
+    version="1.0"
+)
 
 # 2. Configuración de CORS para permitir la comunicación con el frontend (Vite)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 3. Crear todas las tablas en la base de datos
+# 3. Formato personalizado para los errores HTTP
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "status": "error",
+            "mensaje": exc.detail
+        }
+    )
+
+# 4. Crear todas las tablas en la base de datos
 Base.metadata.create_all(bind=engine)
+
 
 @app.get("/")
 def read_root():
-    return {"message": "Conectado a PostgreSQL y tablas creadas exitosamente"}
+    return {
+        "message": "Conectado a PostgreSQL y tablas creadas exitosamente"
+    }
 
-# 4. Incluir todos los routers
+
+# 5. Incluir todos los routers
 app.include_router(categorias_route.router)
 app.include_router(usuario_route.router)
 app.include_router(producto_route.router)

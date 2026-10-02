@@ -11,7 +11,6 @@ def crear_producto(data: ProductoCreate, db: Session = Depends(get_db)):
     producto = ProductoService.crear(db, data)
     return {
         "status": "success",
-        "code": status.HTTP_201_CREATED,
         "mensaje": "Producto creado exitosamente",
         "data": producto
     }
@@ -21,7 +20,6 @@ def listar_productos(db: Session = Depends(get_db)):
     productos = ProductoService.obtener_todos(db)
     return {
         "status": "success",
-        "code": status.HTTP_200_OK,
         "mensaje": "Productos listados exitosamente",
         "data": productos
     }
@@ -31,7 +29,6 @@ def obtener_producto(id_productos: int, db: Session = Depends(get_db)):
     producto = ProductoService.obtener_por_id(db, id_productos)
     return {
         "status": "success",
-        "code": status.HTTP_200_OK,
         "mensaje": "Producto encontrado",
         "data": producto
     }
@@ -41,7 +38,6 @@ def actualizar_producto(id_productos: int, data: ProductoUpdate, db: Session = D
     producto = ProductoService.actualizar(db, id_productos, data)
     return {
         "status": "success",
-        "code": status.HTTP_200_OK,
         "mensaje": "Producto actualizado exitosamente",
         "data": producto
     }
@@ -51,7 +47,6 @@ def eliminar_producto(id_productos: int, db: Session = Depends(get_db)):
     resultado = ProductoService.eliminar(db, id_productos)
     return {
         "status": "success",
-        "code": status.HTTP_200_OK,
         "mensaje": "Producto eliminado exitosamente",
         "data": resultado
     }

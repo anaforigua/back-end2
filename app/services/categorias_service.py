@@ -29,7 +29,7 @@ class CategoriaService:
         if not db_item:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Categoría no encontrada"
+                detail="Categoría no encontrada",
             )
         return db_item
 
