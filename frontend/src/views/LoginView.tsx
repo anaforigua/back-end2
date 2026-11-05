@@ -13,6 +13,26 @@ export function LoginView({ onLogin }: LoginViewProps) {
   const [password, setPassword] = useState<string>("");
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
+  // Lista de TLDs permitidos
+  const allowedTlds = ["com", "co", "net", "org", "io", "edu"];
+  
+  // Expresión regular dinámica para validar los TLDs permitidos
+  const emailPattern = `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.(${allowedTlds.join("|")})$`;
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    setEmail(input.value);
+
+    // Validación y mensaje personalizado para el usuario
+    if (input.validity.patternMismatch) {
+      input.setCustomValidity(
+        `Por favor, ingresa un correo válido que termine en una extensión permitida (ej: .${allowedTlds.join(", .")})`
+      );
+    } else {
+      input.setCustomValidity("");
+    }
+  };
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
@@ -28,7 +48,7 @@ export function LoginView({ onLogin }: LoginViewProps) {
             REVEN<span>FY</span>
           </div>
           <div className="brand-copy">
-            <h1>Compra.br / Vende.br / Crece.</h1>
+            <h1>Compras / Vendes / Creces.</h1>
             <p>Una plataforma para gestionar productos, compras y ventas desde un solo lugar.</p>
           </div>
           <div className="notice">Interfaz React modular - Sincronizada con FastAPI</div>
@@ -42,7 +62,8 @@ export function LoginView({ onLogin }: LoginViewProps) {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                pattern={emailPattern}
+                onChange={handleEmailChange}
                 placeholder="admin@revenfy.com"
                 required
               />
@@ -78,6 +99,17 @@ export function LoginView({ onLogin }: LoginViewProps) {
             <button type="submit" className="btn">
               Entrar
             </button>
+
+            {/* Texto con enlace para ir al registro usando clases CSS */}
+            <p className="auth-redirect-text">
+              ¿No tienes cuenta?{" "}
+              <span
+                onClick={() => navigate("/register")}
+                className="auth-redirect-link"
+              >
+                Regístrate
+              </span>
+            </p>
           </form>
         </div>
       </section>

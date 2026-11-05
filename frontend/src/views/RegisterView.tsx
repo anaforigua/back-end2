@@ -3,33 +3,54 @@ import { useNavigate, Link } from "react-router-dom";
 import { Field } from "../components/Field";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 
-interface RegisterData {
-  firstName: string;
-  lastName: string;
-  email: string;
+interface LoginViewProps {
+  onLogin: (email: string) => void;
 }
 
-interface RegisterViewProps {
-  onRegister?: (data: RegisterData) => void;
-}
-
-export function RegisterView({ onRegister }: RegisterViewProps) {
+export function LoginView({ onLogin }: LoginViewProps) {
   const navigate = useNavigate();
-  const [firstName, setFirstName] = useState<string>("");
-  const [lastName, setLastName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  
+  // Estado para controlar el mensaje de error del correo
+  const [emailError, setEmailError] = useState<string>("");
+
+  // Lista de TLDs permitidos
+  const allowedTlds = ["com", "co", "net", "org", "io", "edu"];
+
+  // Expresión regular estricta: exige texto + "@" + texto + "." + TLD permitido
+  const emailRegex = new RegExp(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.(${allowedTlds.join("|")})$`);
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEmail(value);
+
+    if (value.trim() === "") {
+      setEmailError("");
+      return;
+    }
+
+    // Validamos en tiempo real mientras escribe
+    if (!emailRegex.test(value)) {
+      setEmailError(`El correo debe incluir '@' y terminar en una extensión válida (.${allowedTlds.join(", .")})`);
+    } else {
+      setEmailError(""); // Si es válido, borramos el error
+    }
+  };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!firstName || !lastName || !email || !password) return;
+    if (!email || !password) return;
 
-    if (onRegister) {
-      onRegister({ firstName, lastName, email });
+    // Validación final antes de enviar
+    if (!emailRegex.test(email)) {
+      setEmailError(`El correo debe incluir '@' y terminar en una extensión válida (.${allowedTlds.join(", .")})`);
+      return;
     }
 
-    navigate("/login");
+    onLogin(email);
+    navigate("/roles");
   };
 
   return (
@@ -40,43 +61,30 @@ export function RegisterView({ onRegister }: RegisterViewProps) {
             REVEN<span>FY</span>
           </div>
           <div className="brand-copy">
-            <h1>Únete.<br />Crea.<br />Expande.</h1>
-            <p>Crea tu cuenta para gestionar productos, compras y ventas desde un solo lugar.</p>
+            <h1>Compras / Vendes / Creces.</h1>
+            <p>Una plataforma para gestionar productos, compras y ventas desde un solo lugar.</p>
           </div>
-          <div className="notice">Plataforma modular - Sincronizada con FastAPI</div>
+          <div className="notice">Interfaz React modular - Sincronizada con FastAPI</div>
         </div>
 
         <div className="login-form">
-          <h2>Crear cuenta</h2>
-          <p className="muted">Regístrate para comenzar a usar Revenfy.</p>
+          <h2>Iniciar sesión</h2>
+          <p className="muted">Ingresa para seleccionar tu rol.</p>
           <form onSubmit={submit} className="form">
-            <div className="two">
-              <Field label="Nombre">
-                <input
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="Tu nombre"
-                  required
-                />
-              </Field>
-              <Field label="Apellido">
-                <input
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Tu apellido"
-                  required
-                />
-              </Field>
-            </div>
-
             <Field label="Correo electrónico">
               <input
-                type="email"
+                type="text"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="correo@revenfy.com"
+                onChange={handleEmailChange}
+                placeholder="admin@revenfy.com"
                 required
               />
+              {/* Muestra el mensaje de error en rojo si el correo no es válido */}
+              {emailError && (
+                <span style={{ color: "#f87171", fontSize: "0.8rem", marginTop: "4px", display: "block" }}>
+                  {emailError}
+                </span>
+              )}
             </Field>
 
             <Field label="Contraseña">
@@ -107,10 +115,14 @@ export function RegisterView({ onRegister }: RegisterViewProps) {
             </Field>
 
             <button type="submit" className="btn">
-              Registrarse
+              Entrar
             </button>
-            <p className="muted" style={{ textAlign: "center", marginTop: "12px" }}>
-              ¿Ya tienes cuenta? <Link to="/login">Inicia sesión</Link>
+
+            <p className="auth-redirect-text">
+              ¿No tienes cuenta?{" "}
+              <Link to="/register" className="auth-redirect-link">
+                Regístrate
+              </Link>
             </p>
           </form>
         </div>

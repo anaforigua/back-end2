@@ -246,3 +246,19 @@ th{font-size:11px;color:var(--muted)}
   box-shadow: 0 0 0 3px rgba(233, 139, 255, 0.15);
   background-color: var(--card2);
 }
+
+/* Estilo para el párrafo contenedor del texto de redirección */
+.auth-redirect-text {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 0.9rem;
+  color: inherit;
+}
+
+/* Estilo para el enlace interactivo (span) */
+.auth-redirect-link {
+  color: #a855f7;
+  cursor: pointer;
+  font-weight: 500;
+  text-decoration: underline;
+}
