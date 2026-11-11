@@ -62,9 +62,8 @@ export function LoginView({ onLogin }: LoginViewProps) {
               <input
                 type="email"
                 value={email}
-                pattern={emailPattern}
                 onChange={handleEmailChange}
-                placeholder="admin@revenfy.com"
+                placeholder="tucorreo@ejemplo.com"
                 required
               />
             </Field>

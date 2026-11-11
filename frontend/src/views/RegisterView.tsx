@@ -3,24 +3,21 @@ import { useNavigate, Link } from "react-router-dom";
 import { Field } from "../components/Field";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 
-interface LoginViewProps {
-  onLogin: (email: string) => void;
-}
-
-export function LoginView({ onLogin }: LoginViewProps) {
+export function RegisterView() {
   const navigate = useNavigate();
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const [confirm, setConfirm] = useState<string>("");
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  
-  // Estado para controlar el mensaje de error del correo
   const [emailError, setEmailError] = useState<string>("");
+  const [formError, setFormError] = useState<string>("");
 
   // Lista de TLDs permitidos
   const allowedTlds = ["com", "co", "net", "org", "io", "edu"];
 
-  // Expresión regular estricta: exige texto + "@" + texto + "." + TLD permitido
+  // Exige texto + "@" + texto + "." + TLD permitido
   const emailRegex = new RegExp(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.(${allowedTlds.join("|")})$`);
+  const emailMessage = `El correo debe incluir '@' y terminar en una extensión válida (.${allowedTlds.join(", .")})`;
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -30,27 +27,37 @@ export function LoginView({ onLogin }: LoginViewProps) {
       setEmailError("");
       return;
     }
-
-    // Validamos en tiempo real mientras escribe
-    if (!emailRegex.test(value)) {
-      setEmailError(`El correo debe incluir '@' y terminar en una extensión válida (.${allowedTlds.join(", .")})`);
-    } else {
-      setEmailError(""); // Si es válido, borramos el error
-    }
+    setEmailError(emailRegex.test(value) ? "" : emailMessage);
   };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return;
+    setFormError("");
 
-    // Validación final antes de enviar
     if (!emailRegex.test(email)) {
-      setEmailError(`El correo debe incluir '@' y terminar en una extensión válida (.${allowedTlds.join(", .")})`);
+      setEmailError(emailMessage);
+      return;
+    }
+    if (password.length < 6) {
+      setFormError("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+    if (password !== confirm) {
+      setFormError("Las contraseñas no coinciden.");
       return;
     }
 
-    onLogin(email);
-    navigate("/roles");
+    // Aquí se conectará con el backend (FastAPI) para crear la cuenta.
+    navigate("/login");
+  };
+
+  const eyeButtonStyle: React.CSSProperties = {
+    position: "absolute",
+    right: "12px",
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    color: "inherit",
   };
 
   return (
@@ -62,24 +69,23 @@ export function LoginView({ onLogin }: LoginViewProps) {
           </div>
           <div className="brand-copy">
             <h1>Compras / Vendes / Creces.</h1>
-            <p>Una plataforma para gestionar productos, compras y ventas desde un solo lugar.</p>
+            <p>Crea tu cuenta para gestionar productos, compras y ventas desde un solo lugar.</p>
           </div>
           <div className="notice">Interfaz React modular - Sincronizada con FastAPI</div>
         </div>
 
         <div className="login-form">
-          <h2>Iniciar sesión</h2>
-          <p className="muted">Ingresa para seleccionar tu rol.</p>
+          <h2>Crear cuenta</h2>
+          <p className="muted">Regístrate para empezar a usar Revenfy.</p>
           <form onSubmit={submit} className="form">
             <Field label="Correo electrónico">
               <input
                 type="text"
                 value={email}
                 onChange={handleEmailChange}
-                placeholder="admin@revenfy.com"
+                placeholder="tucorreo@ejemplo.com"
                 required
               />
-              {/* Muestra el mensaje de error en rojo si el correo no es válido */}
               {emailError && (
                 <span style={{ color: "#f87171", fontSize: "0.8rem", marginTop: "4px", display: "block" }}>
                   {emailError}
@@ -97,31 +103,34 @@ export function LoginView({ onLogin }: LoginViewProps) {
                   style={{ width: "100%", paddingRight: "40px" }}
                   required
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{
-                    position: "absolute",
-                    right: "12px",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: "inherit",
-                  }}
-                >
+                <button type="button" onClick={() => setShowPassword(!showPassword)} style={eyeButtonStyle}>
                   {showPassword ? <FiEyeOff /> : <FiEye />}
                 </button>
               </div>
             </Field>
 
+            <Field label="Confirmar contraseña">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                placeholder="••••••••"
+                required
+              />
+            </Field>
+
+            {formError && (
+              <span style={{ color: "#f87171", fontSize: "0.85rem" }}>{formError}</span>
+            )}
+
             <button type="submit" className="btn">
-              Entrar
+              Registrarme
             </button>
 
             <p className="auth-redirect-text">
-              ¿No tienes cuenta?{" "}
-              <Link to="/register" className="auth-redirect-link">
-                Regístrate
+              ¿Ya tienes cuenta?{" "}
+              <Link to="/login" className="auth-redirect-link">
+                Inicia sesión
               </Link>
             </p>
           </form>
