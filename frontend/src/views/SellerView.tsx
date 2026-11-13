@@ -10,7 +10,8 @@ interface Product {
   price: number;
   stock: number;
   category: string;
-  emoji?: string;
+  image?: string;       // Ruta de la imagen guardada o URL
+  imageFile?: File;     // Archivo seleccionado desde el explorador
   [key: string]: any;
 }
 
@@ -27,26 +28,30 @@ export function SellerView({ products, onAdd, onUpdate, onDelete }: SellerViewPr
   const totalStock = products.reduce((sum: number, p: Product) => sum + Number(p.stock), 0);
   const outOfStockCount = products.filter((p: Product) => Number(p.stock) === 0).length;
 
-  // Función para manejar el guardado conectando con el backend
+  // Función para manejar el guardado conectando con el backend mediante FormData
   const handleSaveProduct = async (p: Product) => {
     try {
-      const backendData = {
-        nombre: p.name,
-        descripcion: p.description || "Sin descripción",
-        precio: Number(p.price),
-        cantidad: Number(p.stock),
-        condicion_producto: "Nuevo",
-        id_categoria: 1,
-        imagenes_producto: p.emoji || "📦",
-        estado_producto: Number(p.stock) > 0 ? "Disponible" : "Agotado",
-        id_pais_de_origen: 1
-      };
+      // Creamos un FormData para enviar datos y archivos binarios a FastAPI
+      const formData = new FormData();
+      formData.append("nombre", p.name);
+      formData.append("descripcion", p.description || "Sin descripción");
+      formData.append("precio", String(Number(p.price)));
+      formData.append("cantidad", String(Number(p.stock)));
+      formData.append("condicion_producto", "Nuevo");
+      formData.append("id_categoria", "1");
+      formData.append("estado_producto", Number(p.stock) > 0 ? "Disponible" : "Agotado");
+      formData.append("id_pais_de_origen", "1");
+
+      // Si el usuario seleccionó un archivo de imagen en el explorador, lo adjuntamos
+      if (p.imageFile) {
+        formData.append("file", p.imageFile);
+      }
 
       if (p.id) {
-        await productService.update(p.id, backendData);
+        await productService.update(p.id, formData);
         onUpdate(p);
       } else {
-        const response = await productService.create(backendData);
+        const response = await productService.create(formData);
         onAdd(response?.data || p);
       }
       setEditing(null);
@@ -73,7 +78,6 @@ export function SellerView({ products, onAdd, onUpdate, onDelete }: SellerViewPr
               price: 0,
               stock: 0,
               category: "Tecnología",
-              emoji: "📦",
             })
           }
           style={{ transition: "all 0.3s ease" }}

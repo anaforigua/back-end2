@@ -10,7 +10,8 @@ interface Product {
   price: number;
   stock: number;
   category: string;
-  emoji?: string;
+  image?: string;       // Ruta de la imagen guardada o URL
+  imageFile?: File;     // Archivo seleccionado desde el explorador
   [key: string]: any;
 }
 
