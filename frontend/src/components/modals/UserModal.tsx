@@ -1,6 +1,7 @@
 // src/components/modals/UserModal.tsx
 import React, { useState, useEffect } from "react";
 import { User } from "../../types/user";
+import { UserAvatar } from "../UserAvatar";
 
 interface UserModalProps {
   isOpen: boolean;
@@ -63,6 +64,42 @@ export function UserModal({ isOpen, editingUser, onClose, onSave }: UserModalPro
     });
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Por favor selecciona un archivo de imagen válido (JPG, PNG, WEBP).");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const maxSize = 200;
+        canvas.width = maxSize;
+        canvas.height = maxSize;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        // Recorte cuadrado centrado (aspect ratio 1:1)
+        const minSide = Math.min(img.width, img.height);
+        const sx = (img.width - minSide) / 2;
+        const sy = (img.height - minSide) / 2;
+
+        ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, maxSize, maxSize);
+        const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.82);
+
+        setForm((prev) => ({ ...prev, avatar: compressedDataUrl }));
+      };
+      img.src = String(event.target?.result || "");
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -111,6 +148,40 @@ export function UserModal({ isOpen, editingUser, onClose, onSave }: UserModalPro
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: "grid", gap: "12px" }}>
+          {/* Selector y Vista Previa de Foto de Perfil */}
+          <div style={{ display: "flex", alignItems: "center", gap: "14px", padding: "6px 0" }}>
+            <UserAvatar avatar={form.avatar} alt={form.nombre} size={64} />
+            <div style={{ flex: 1 }}>
+              <label className="muted" style={{ fontSize: "0.85rem", display: "block", marginBottom: "6px" }}>
+                Foto de Perfil (desde tu dispositivo)
+              </label>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+                <label
+                  className="btn"
+                  style={{ padding: "6px 12px", fontSize: "0.82rem", cursor: "pointer", margin: 0 }}
+                >
+                  📷 Seleccionar Foto
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    style={{ display: "none" }}
+                  />
+                </label>
+                {form.avatar.startsWith("data:image") && (
+                  <button
+                    type="button"
+                    className="btn"
+                    style={{ padding: "6px 10px", fontSize: "0.8rem", opacity: 0.75 }}
+                    onClick={() => setForm({ ...form, avatar: "👤" })}
+                  >
+                    Quitar foto
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
             <div>
               <label className="muted" style={{ fontSize: "0.85rem" }}>Nombre *</label>
@@ -134,27 +205,15 @@ export function UserModal({ isOpen, editingUser, onClose, onSave }: UserModalPro
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "12px" }}>
-            <div>
-              <label className="muted" style={{ fontSize: "0.85rem" }}>Correo Institucional / Personal *</label>
-              <input
-                type="email"
-                required
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                style={{ width: "100%", padding: "8px", borderRadius: "8px", border: "1px solid #ccc" }}
-              />
-            </div>
-            <div>
-              <label className="muted" style={{ fontSize: "0.85rem" }}>Avatar (Emoji)</label>
-              <input
-                type="text"
-                maxLength={4}
-                value={form.avatar}
-                onChange={(e) => setForm({ ...form, avatar: e.target.value })}
-                style={{ width: "100%", padding: "8px", borderRadius: "8px", border: "1px solid #ccc", textAlign: "center" }}
-              />
-            </div>
+          <div>
+            <label className="muted" style={{ fontSize: "0.85rem" }}>Correo Institucional / Personal *</label>
+            <input
+              type="email"
+              required
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              style={{ width: "100%", padding: "8px", borderRadius: "8px", border: "1px solid #ccc" }}
+            />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
