@@ -1,6 +1,17 @@
+// src/views/RolesView.tsx
 import React from "react";
 import { NavLink } from "react-router-dom";
 import { BrandLogo } from "../components/BrandLogo";
+
+export const ADMIN_EMAILS = [
+  "admin@revenfy.com",
+  "anamariaforigua20@gmail.com",
+  "anamaria.forigua@misena.edu.co",
+];
+
+export function isAdminEmail(email: string): boolean {
+  return ADMIN_EMAILS.includes(email.trim().toLowerCase());
+}
 
 interface RoleCardProps {
   to: string;
@@ -29,13 +40,27 @@ function RoleCard({ to, icon, title, text, button, recommended }: RoleCardProps)
   );
 }
 
-export function RolesView() {
+interface RolesViewProps {
+  email?: string;
+}
+
+export function RolesView({ email = "" }: RolesViewProps) {
+  const currentEmail = email || localStorage.getItem("revenfy_email") || "";
+  const canAccessAdmin = isAdminEmail(currentEmail);
+
   return (
     <main className="role-page">
       <div className="role-heading">
         <div
           className="role-brand-pill"
-          style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 18px", width: "max-content", margin: "0 auto 25px" }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            padding: "8px 18px",
+            width: "max-content",
+            margin: "0 auto 25px",
+          }}
         >
           <BrandLogo size="normal" />
         </div>
@@ -66,6 +91,15 @@ export function RolesView() {
           text="Accede a las funciones de compra y venta desde la misma cuenta."
           button="Quiero Todo"
         />
+        {canAccessAdmin && (
+          <RoleCard
+            to="/admin"
+            icon="🛡️"
+            title="Administrador"
+            text="Gestiona usuarios, roles, estados y el CRUD completo del catálogo."
+            button="Panel Admin"
+          />
+        )}
       </div>
     </main>
   );

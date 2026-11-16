@@ -16,4 +16,7 @@ export interface User {
   calificacion: number;
   estado_usuario: string;
   id_roles: number[];
+  productos_publicados?: number;
+  productos_comprados?: number;
+  productos_vendidos?: number;
 }

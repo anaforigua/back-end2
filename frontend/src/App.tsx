@@ -1,12 +1,14 @@
+// src/App.tsx
 import React, { useState, useEffect } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { LoginView } from "./views/LoginView";
 import { RegisterView } from "./views/RegisterView";
-import { RolesView } from "./views/RolesView";
 import { SellerView } from "./views/SellerView";
 import { BuyerView } from "./views/BuyerView";
 import { BothView } from "./views/BothView";
 import { GlobalHeader } from "./components/GlobalHeader";
+import { AdminView } from "./views/AdminView";
+import { RolesView, isAdminEmail } from "./views/RolesView";
 
 interface Product {
   id?: number | string;
@@ -32,6 +34,18 @@ interface Order {
   status: string;
 }
 
+interface AdminProtectedProps {
+  logged: boolean;
+  email: string;
+  children: React.ReactNode;
+}
+
+function AdminProtected({ logged, email, children }: AdminProtectedProps) {
+  if (!logged) return <Navigate to="/login" replace />;
+  if (!isAdminEmail(email)) return <Navigate to="/roles" replace />;
+  return <>{children}</>;
+}
+
 const seedProducts: Product[] = [
   { id: 1, name: "Teclado Mecánico RGB", description: "Switches red, retroiluminación personalizable", price: 250000, stock: 10, category: "Tecnología", emoji: "⌨️" },
   { id: 2, name: "Mouse Inalámbrico Ergonómico", description: "Sensor óptico de alta precisión", price: 95000, stock: 15, category: "Tecnología", emoji: "🖱️" },
@@ -49,6 +63,8 @@ const load = <T,>(key: string, fallback: T): T => {
 };
 
 export function App() {
+  const navigate = useNavigate();
+
   const [products, setProducts] = useState<Product[]>(() => load<Product[]>("revenfy_products", seedProducts));
   const [cart, setCart] = useState<CartItem[]>(() => load<CartItem[]>("revenfy_cart", []));
   const [orders, setOrders] = useState<Order[]>(() => load<Order[]>("revenfy_orders", []));
@@ -82,12 +98,20 @@ export function App() {
     setLogged(true);
     localStorage.setItem("revenfy_logged", "1");
     localStorage.setItem("revenfy_email", value);
+
+    if (isAdminEmail(value)) {
+      navigate("/admin", { replace: true });
+    } else {
+      navigate("/roles", { replace: true });
+    }
   };
 
   const logout = () => {
     setLogged(false);
+    setEmail("");
     localStorage.removeItem("revenfy_logged");
     localStorage.removeItem("revenfy_email");
+    navigate("/login", { replace: true });
   };
 
   const addProduct = (product: Product) => {
@@ -177,14 +201,38 @@ export function App() {
   return (
     <>
       <Routes>
-        <Route path="/login" element={<LoginView onLogin={login} />} />
+        <Route
+          path="/login"
+          element={
+            logged ? (
+              <Navigate to={isAdminEmail(email) ? "/admin" : "/roles"} replace />
+            ) : (
+              <LoginView onLogin={login} />
+            )
+          }
+        />
         <Route path="/register" element={<RegisterView />} />
         <Route
           path="/roles"
           element={
             <Protected logged={logged}>
-              <RolesView />
+              <RolesView email={email} />
             </Protected>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <AdminProtected logged={logged} email={email}>
+              <AdminView
+                products={products}
+                orders={orders}
+                onAddProduct={addProduct}
+                onUpdateProduct={updateProduct}
+                onDeleteProduct={deleteProduct}
+                onNotify={notify}
+              />
+            </AdminProtected>
           }
         />
         <Route
@@ -222,7 +270,10 @@ export function App() {
             </Protected>
           }
         />
-        <Route path="*" element={<Navigate to={logged ? "/roles" : "/login"} replace />} />
+        <Route
+          path="*"
+          element={<Navigate to={logged ? (isAdminEmail(email) ? "/admin" : "/roles") : "/login"} replace />}
+        />
       </Routes>
 
       {logged && (
