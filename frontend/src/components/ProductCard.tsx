@@ -1,4 +1,6 @@
+// src/components/ProductCard.tsx
 import React from "react";
+import { ProductMedia } from "./ProductMedia";
 
 interface Product {
   id?: number | string;
@@ -8,6 +10,7 @@ interface Product {
   stock: number;
   category: string;
   emoji?: string;
+  image?: string;
 }
 
 interface ProductCardProps {
@@ -23,14 +26,16 @@ const money = (value: number) => "$" + Number(value).toLocaleString("es-CO");
 export function ProductCard({ product, seller, onEdit, onDelete, onBuy }: ProductCardProps) {
   return (
     <article className="card product-card">
-      <div className="product-img">{product.emoji || "📦"}</div>
+      <div className="product-img" style={{ padding: 0, overflow: "hidden" }}>
+        <ProductMedia src={product.image || product.emoji} alt={product.name} height="180px" />
+      </div>
       <div className="product-body">
         <span className="tag">{product.category}</span>
         <h3>{product.name}</h3>
         <p className="muted">{product.description}</p>
         <div className="price">{money(product.price)}</div>
         <div className="stock">Stock: <strong>{product.stock}</strong></div>
-        
+
         {seller ? (
           <div className="actions">
             <button className="btn secondary" onClick={onEdit} style={{ transition: "all 0.2s ease" }}>

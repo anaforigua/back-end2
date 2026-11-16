@@ -13,6 +13,41 @@ interface ProfileModalProps {
   onUpdated: (updatedUser: User) => void;
 }
 
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  boxSizing: "border-box",
+  padding: "10px 12px",
+  borderRadius: "10px",
+  border: "1px solid #283566",
+  backgroundColor: "#162044",
+  color: "#f8fafc",
+  fontSize: "0.9rem",
+  outline: "none",
+  transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+};
+
+const labelStyle: React.CSSProperties = {
+  display: "block",
+  fontSize: "0.82rem",
+  fontWeight: 500,
+  color: "#a5b4fc",
+  marginBottom: "6px",
+};
+
+const secondaryBtnStyle: React.CSSProperties = {
+  padding: "7px 13px",
+  borderRadius: "10px",
+  border: "1px solid #37437a",
+  backgroundColor: "#1b2652",
+  color: "#e0e7ff",
+  fontSize: "0.82rem",
+  fontWeight: 500,
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "6px",
+};
+
 export function ProfileModal({ isOpen, email, onClose, onUpdated }: ProfileModalProps) {
   const [profile, setProfile] = useState<User | null>(null);
   const [password, setPassword] = useState<string>("");
@@ -104,10 +139,12 @@ export function ProfileModal({ isOpen, email, onClose, onUpdated }: ProfileModal
 
   return (
     <div
+      onClick={onClose}
       style={{
         position: "fixed",
         inset: 0,
-        backgroundColor: "rgba(0, 0, 0, 0.65)",
+        backgroundColor: "rgba(6, 10, 28, 0.82)",
+        backdropFilter: "blur(6px)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -116,38 +153,91 @@ export function ProfileModal({ isOpen, email, onClose, onUpdated }: ProfileModal
       }}
     >
       <div
-        className="card"
+        onClick={(e) => e.stopPropagation()}
         style={{
           width: "100%",
           maxWidth: "500px",
           maxHeight: "90vh",
           overflowY: "auto",
+          backgroundColor: "#0e1532",
+          border: "1px solid #263366",
+          borderRadius: "18px",
+          boxShadow: "0 24px 50px rgba(0, 0, 0, 0.65)",
           padding: "24px",
+          color: "#f8fafc",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-          <h3 style={{ margin: 0 }}>Mi Perfil en <span>Revenfy</span></h3>
-          <button type="button" onClick={onClose} className="btn" style={{ padding: "4px 10px" }}>
+        {/* Cabecera */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingBottom: "14px",
+            marginBottom: "18px",
+            borderBottom: "1px solid #1f2b57",
+          }}
+        >
+          <div>
+            <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 700, color: "#ffffff" }}>
+              Mi Perfil en{" "}
+              <span
+                style={{
+                  background: "linear-gradient(90deg, #8b5cf6 0%, #d946ef 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+              >
+                Revenfy
+              </span>
+            </h3>
+            <p style={{ margin: "2px 0 0", fontSize: "0.8rem", color: "#94a3b8" }}>
+              Personaliza tu identidad y ubicación en la comunidad SENA
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              background: "#162044",
+              border: "1px solid #283566",
+              color: "#a5b4fc",
+              width: "32px",
+              height: "32px",
+              borderRadius: "10px",
+              cursor: "pointer",
+              fontSize: "0.95rem",
+            }}
+          >
             ✕
           </button>
         </div>
 
         {loading || !profile ? (
-          <p className="muted">Cargando información de tu perfil...</p>
+          <p style={{ color: "#a5b4fc", textAlign: "center", padding: "24px 0" }}>
+            Cargando información de tu perfil...
+          </p>
         ) : (
-          <form onSubmit={handleSubmit} style={{ display: "grid", gap: "12px" }}>
-            {/* Foto de perfil desde dispositivo */}
-            <div style={{ display: "flex", alignItems: "center", gap: "14px", padding: "6px 0" }}>
-              <UserAvatar avatar={profile.avatar} alt={profile.nombre} size={70} />
-              <div>
-                <label className="muted" style={{ fontSize: "0.85rem", display: "block", marginBottom: "6px" }}>
+          <form onSubmit={handleSubmit} style={{ display: "grid", gap: "15px" }}>
+            {/* Tarjeta de Foto de Perfil */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "16px",
+                padding: "12px 14px",
+                backgroundColor: "#131c3f",
+                borderRadius: "14px",
+                border: "1px solid #243060",
+              }}
+            >
+              <UserAvatar avatar={profile.avatar} alt={profile.nombre} size={64} />
+              <div style={{ flex: 1 }}>
+                <span style={{ ...labelStyle, color: "#e0e7ff", marginBottom: "8px" }}>
                   Foto de Perfil
-                </label>
+                </span>
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                  <label
-                    className="btn"
-                    style={{ padding: "6px 12px", fontSize: "0.82rem", cursor: "pointer", margin: 0 }}
-                  >
+                  <label style={secondaryBtnStyle}>
                     📷 Subir desde dispositivo
                     <input
                       type="file"
@@ -159,8 +249,12 @@ export function ProfileModal({ isOpen, email, onClose, onUpdated }: ProfileModal
                   {profile.avatar?.startsWith("data:image") && (
                     <button
                       type="button"
-                      className="btn"
-                      style={{ padding: "6px 10px", fontSize: "0.8rem", opacity: 0.75 }}
+                      style={{
+                        ...secondaryBtnStyle,
+                        backgroundColor: "rgba(239, 68, 68, 0.12)",
+                        borderColor: "rgba(239, 68, 68, 0.35)",
+                        color: "#fca5a5",
+                      }}
                       onClick={() => setProfile({ ...profile, avatar: "👤" })}
                     >
                       Quitar
@@ -170,41 +264,42 @@ export function ProfileModal({ isOpen, email, onClose, onUpdated }: ProfileModal
               </div>
             </div>
 
+            {/* Nombre y Apellidos */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
               <div>
-                <label className="muted" style={{ fontSize: "0.85rem" }}>Nombre *</label>
+                <label style={labelStyle}>Nombre *</label>
                 <input
                   type="text"
                   required
                   value={profile.nombre}
                   onChange={(e) => setProfile({ ...profile, nombre: e.target.value })}
-                  style={{ width: "100%", padding: "8px", borderRadius: "8px", border: "1px solid #ccc" }}
+                  style={inputStyle}
                 />
               </div>
               <div>
-                <label className="muted" style={{ fontSize: "0.85rem" }}>Apellidos *</label>
+                <label style={labelStyle}>Apellidos *</label>
                 <input
                   type="text"
                   required
                   value={profile.apellidos}
                   onChange={(e) => setProfile({ ...profile, apellidos: e.target.value })}
-                  style={{ width: "100%", padding: "8px", borderRadius: "8px", border: "1px solid #ccc" }}
+                  style={inputStyle}
                 />
               </div>
             </div>
 
+            {/* Correo Electrónico */}
             <div>
-              <label className="muted" style={{ fontSize: "0.85rem" }}>Correo Electrónico</label>
+              <label style={labelStyle}>Correo Electrónico</label>
               <input
                 type="email"
                 disabled
                 value={profile.email}
                 style={{
-                  width: "100%",
-                  padding: "8px",
-                  borderRadius: "8px",
-                  border: "1px solid #ccc",
-                  opacity: 0.7,
+                  ...inputStyle,
+                  backgroundColor: "#0b1026",
+                  color: "#64748b",
+                  borderColor: "#1d274f",
                   cursor: "not-allowed",
                 }}
               />
@@ -212,16 +307,29 @@ export function ProfileModal({ isOpen, email, onClose, onUpdated }: ProfileModal
 
             {/* Ubicación en tiempo real */}
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                <label className="muted" style={{ fontSize: "0.85rem" }}>Ubicación en Tiempo Real *</label>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "6px",
+                }}
+              >
+                <label style={{ ...labelStyle, marginBottom: 0 }}>Ubicación en Tiempo Real *</label>
                 <button
                   type="button"
-                  className="btn"
                   onClick={handleDetectLocation}
                   disabled={locating}
-                  style={{ padding: "4px 10px", fontSize: "0.78rem" }}
+                  style={{
+                    ...secondaryBtnStyle,
+                    padding: "4px 10px",
+                    fontSize: "0.76rem",
+                    backgroundColor: "rgba(139, 92, 246, 0.16)",
+                    borderColor: "rgba(168, 85, 247, 0.45)",
+                    color: "#d8b4fe",
+                  }}
                 >
-                  {locating ? "⏳ Detectando GPS..." : "📍 Usar mi ubicación actual"}
+                  {locating ? "⏳ Detectando..." : "📍 Usar mi ubicación actual"}
                 </button>
               </div>
               <input
@@ -230,14 +338,20 @@ export function ProfileModal({ isOpen, email, onClose, onUpdated }: ProfileModal
                 value={profile.ubicacion}
                 onChange={(e) => setProfile({ ...profile, ubicacion: e.target.value })}
                 placeholder="Ej. Chapinero, Bogotá D.C."
-                style={{ width: "100%", padding: "8px", borderRadius: "8px", border: "1px solid #ccc" }}
+                style={inputStyle}
               />
               {profile.ubicacion && (
                 <a
                   href={mapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ fontSize: "0.78rem", color: "#60a5fa", display: "inline-block", marginTop: "4px" }}
+                  style={{
+                    fontSize: "0.78rem",
+                    color: "#c084fc",
+                    textDecoration: "none",
+                    display: "inline-block",
+                    marginTop: "6px",
+                  }}
                 >
                   🗺️ Ver ubicación exacta en Google Maps ↗
                 </a>
@@ -246,33 +360,66 @@ export function ProfileModal({ isOpen, email, onClose, onUpdated }: ProfileModal
 
             {/* Biografía obligatoria */}
             <div>
-              <label className="muted" style={{ fontSize: "0.85rem" }}>Biografía *</label>
+              <label style={labelStyle}>Biografía *</label>
               <textarea
                 rows={3}
                 required
                 value={profile.biografia}
                 onChange={(e) => setProfile({ ...profile, biografia: e.target.value })}
                 placeholder="Cuéntale a la comunidad SENA sobre ti y los artículos que ofreces o buscas..."
-                style={{ width: "100%", padding: "8px", borderRadius: "8px", border: "1px solid #ccc" }}
+                style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }}
               />
             </div>
 
+            {/* Contraseña */}
             <div>
-              <label className="muted" style={{ fontSize: "0.85rem" }}>Cambiar Contraseña (opcional)</label>
+              <label style={labelStyle}>Cambiar Contraseña (opcional)</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Dejar vacío para mantener la actual"
-                style={{ width: "100%", padding: "8px", borderRadius: "8px", border: "1px solid #ccc" }}
+                style={inputStyle}
               />
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
-              <button type="button" onClick={onClose} className="btn" style={{ opacity: 0.8 }}>
+            {/* Acciones finales */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "10px",
+                marginTop: "6px",
+                paddingTop: "14px",
+                borderTop: "1px solid #1f2b57",
+              }}
+            >
+              <button
+                type="button"
+                onClick={onClose}
+                style={{
+                  ...secondaryBtnStyle,
+                  padding: "10px 18px",
+                  fontSize: "0.88rem",
+                }}
+              >
                 Cancelar
               </button>
-              <button type="submit" className="btn" disabled={saving}>
+              <button
+                type="submit"
+                disabled={saving}
+                style={{
+                  padding: "10px 22px",
+                  borderRadius: "10px",
+                  border: "none",
+                  background: "linear-gradient(135deg, #7c3aed 0%, #c026d3 100%)",
+                  color: "#ffffff",
+                  fontSize: "0.88rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  boxShadow: "0 4px 16px rgba(168, 85, 247, 0.35)",
+                }}
+              >
                 {saving ? "Guardando..." : "Guardar Perfil"}
               </button>
             </div>

@@ -1,3 +1,4 @@
+// src/views/SellerView.tsx
 import React, { useState } from "react";
 import { ProductModal } from "../components/modals/ProductModal";
 import { SellerInventory } from "../components/SellerInventory";
@@ -11,6 +12,7 @@ interface Product {
   stock: number;
   category: string;
   emoji?: string;
+  image?: string;
   [key: string]: any;
 }
 
@@ -27,33 +29,43 @@ export function SellerView({ products, onAdd, onUpdate, onDelete }: SellerViewPr
   const totalStock = products.reduce((sum: number, p: Product) => sum + Number(p.stock), 0);
   const outOfStockCount = products.filter((p: Product) => Number(p.stock) === 0).length;
 
-  // Función para manejar el guardado conectando con el backend
   const handleSaveProduct = async (p: Product) => {
+    const mediaValue = p.image || p.emoji || "📦";
+    const normalizedProduct: Product = {
+      ...p,
+      emoji: mediaValue,
+      image: mediaValue,
+    };
+
     try {
       const backendData = {
-        nombre: p.name,
-        descripcion: p.description || "Sin descripción",
-        precio: Number(p.price),
-        cantidad: Number(p.stock),
+        nombre: normalizedProduct.name,
+        descripcion: normalizedProduct.description || "Sin descripción",
+        precio: Number(normalizedProduct.price),
+        cantidad: Number(normalizedProduct.stock),
         condicion_producto: "Nuevo",
         id_categoria: 1,
-        imagenes_producto: p.emoji || "📦",
-        estado_producto: Number(p.stock) > 0 ? "Disponible" : "Agotado",
-        id_pais_de_origen: 1
+        imagenes_producto: mediaValue,
+        estado_producto: Number(normalizedProduct.stock) > 0 ? "Disponible" : "Agotado",
+        id_pais_de_origen: 1,
       };
 
-      if (p.id) {
-        await productService.update(p.id, backendData);
-        onUpdate(p);
+      if (normalizedProduct.id) {
+        await productService.update(normalizedProduct.id, backendData);
+        onUpdate(normalizedProduct);
       } else {
         const response = await productService.create(backendData);
-        onAdd(response?.data || p);
+        onAdd(response?.data ? { ...normalizedProduct, id: response.data.id } : normalizedProduct);
       }
       setEditing(null);
-      alert("¡Producto guardado exitosamente en la base de datos!");
-    } catch (error) {
-      console.error("Error al guardar el producto en la base de datos:", error);
-      alert("Hubo un error al guardar el producto.");
+    } catch {
+      // Respaldo local si el backend no está activo
+      if (normalizedProduct.id) {
+        onUpdate(normalizedProduct);
+      } else {
+        onAdd(normalizedProduct);
+      }
+      setEditing(null);
     }
   };
 
@@ -82,7 +94,6 @@ export function SellerView({ products, onAdd, onUpdate, onDelete }: SellerViewPr
         </button>
       </div>
 
-      {/* Componente modular integrado */}
       <SellerInventory
         products={products}
         totalStock={totalStock}

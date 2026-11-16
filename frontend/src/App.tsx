@@ -18,6 +18,8 @@ interface Product {
   stock: number;
   category: string;
   emoji?: string;
+  image?: string;
+  ownerEmail?: string;
   [key: string]: any;
 }
 
@@ -32,6 +34,8 @@ interface Order {
   units: number;
   total: number;
   status: string;
+  buyerEmail?: string;
+  sellerEmail?: string;
 }
 
 interface AdminProtectedProps {
@@ -115,13 +119,16 @@ export function App() {
   };
 
   const addProduct = (product: Product) => {
-    setProducts((current: Product[]) => [...current, { ...product, id: Date.now() }]);
+    setProducts((current: Product[]) => [
+      ...current,
+      { ...product, id: Date.now(), ownerEmail: product.ownerEmail || email },
+    ]);
     notify("Producto agregado");
   };
 
   const updateProduct = (product: Product) => {
     setProducts((current: Product[]) =>
-      current.map((p: Product) => (p.id === product.id ? product : p))
+      current.map((p: Product) => (p.id === product.id ? { ...p, ...product } : p))
     );
     notify("Producto actualizado");
   };
@@ -176,6 +183,8 @@ export function App() {
       return sum + (p ? p.price * item.qty : 0);
     }, 0);
 
+    const firstProduct = products.find((p: Product) => p.id === cart[0]?.id);
+
     setProducts((current: Product[]) =>
       current.map((p: Product) => {
         const item = cart.find((i: CartItem) => i.id === p.id);
@@ -190,6 +199,8 @@ export function App() {
         units: cart.reduce((sum: number, i: CartItem) => sum + i.qty, 0),
         total,
         status: "Confirmado",
+        buyerEmail: email,
+        sellerEmail: firstProduct?.ownerEmail,
       },
       ...current,
     ]);
@@ -266,7 +277,13 @@ export function App() {
           path="/ambos"
           element={
             <Protected logged={logged}>
-              <BothView products={products} orders={orders} />
+              <BothView
+                products={products}
+                orders={orders}
+                onAdd={addProduct}
+                onUpdate={updateProduct}
+                onDelete={deleteProduct}
+              />
             </Protected>
           }
         />
