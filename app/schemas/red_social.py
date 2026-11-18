@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 class RedSocialBase(BaseModel):
     nombre: str
@@ -15,5 +15,4 @@ class RedSocialUpdate(BaseModel):
 class RedSocialRead(RedSocialBase):
     id_red_social: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

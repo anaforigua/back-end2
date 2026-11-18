@@ -27,97 +27,71 @@ class PedidoService:
 
     @staticmethod
     def crear(db: Session, data: PedidoCreate) -> PedidoModel:
-        # RB01 — Usuario obligatorio: Verificar si el usuario existe
-        usuario_existente = db.query(UsuarioModel).filter(UsuarioModel.id_usuarios == data.id_usuarios).first()
-        if not usuario_existente:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="❌ El usuario especificado no existe."
-            )
-
-        # RB02 — El pedido debe contener productos
+        usuario = db.query(UsuarioModel).filter(
+            UsuarioModel.id_usuarios == data.id_usuarios
+        ).first()
+        if not usuario:
+            raise HTTPException(status_code=404, detail="El usuario especificado no existe.")
         if not data.detalles:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="❌ El pedido debe contener al menos un producto."
-            )
+            raise HTTPException(status_code=400, detail="El pedido debe contener al menos un producto.")
 
-        total_pedido = 0.0
-        detalles_calculados = []
-
+        # Agrupar líneas repetidas para validar el stock acumulado por producto.
+        cantidades: dict[int, int] = {}
         for detalle in data.detalles:
-            # RB04 — Cantidad válida (> 0)
             if detalle.cantidad <= 0:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="❌ La cantidad solicitada debe ser mayor que cero."
-                )
+                raise HTTPException(status_code=400, detail="La cantidad solicitada debe ser mayor que cero.")
+            cantidades[detalle.id_productos] = cantidades.get(detalle.id_productos, 0) + detalle.cantidad
 
-            # RB03 — Solo productos disponibles (verificar existencia)
-            producto = db.query(ProductoModel).filter(ProductoModel.id_productos == detalle.id_productos).first()
+        productos = {}
+        for producto_id, cantidad_total in cantidades.items():
+            producto = db.query(ProductoModel).filter(
+                ProductoModel.id_productos == producto_id
+            ).first()
             if not producto:
+                raise HTTPException(status_code=404, detail=f"El producto con ID {producto_id} no existe.")
+            if (getattr(producto, "estado_producto", "Disponible") or "").casefold() != "disponible".casefold():
+                raise HTTPException(status_code=400, detail=f"El producto '{producto.nombre}' no está disponible.")
+            stock = PedidoService._obtener_stock(producto)
+            if stock < cantidad_total:
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"❌ El producto con ID {detalle.id_productos} no existe."
+                    status_code=400,
+                    detail=f"Stock insuficiente para el producto '{producto.nombre}'. Stock disponible: {stock}"
                 )
+            productos[producto_id] = producto
 
-            # RB05 — Disponibilidad (Stock suficiente)
-            stock_actual = PedidoService._obtener_stock(producto)
-            if stock_actual < detalle.cantidad:
-                nombre = getattr(producto, "nombre_producto", getattr(producto, "nombre", f"ID {producto.id_productos}"))
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"❌ Stock insuficiente para el producto '{nombre}'. Stock disponible: {stock_actual}"
-                )
+        total = 0.0
+        detalles_calculados = []
+        for detalle in data.detalles:
+            producto = productos[detalle.id_productos]
+            # El precio siempre procede del catálogo; nunca del payload del cliente.
+            subtotal = detalle.cantidad * float(producto.precio)
+            total += subtotal
+            detalles_calculados.append((producto, detalle.cantidad, subtotal))
 
-            # RB06 — Cálculo automático del total y subtotal utilizando el precio del producto
-            precio_unitario = detalle.precio_unitario if getattr(detalle, "precio_unitario", None) else getattr(producto, "precio", 0.0)
-            subtotal = detalle.cantidad * precio_unitario
-            total_pedido += subtotal
-
-            detalles_calculados.append({
-                "producto": producto,
-                "cantidad": detalle.cantidad,
-                "subtotal": subtotal
-            })
-
-        # RB07 — Estado inicial PENDIENTE por defecto
         pedido_data = data.model_dump(exclude={"detalles", "fecha"})
-        if not pedido_data.get("estado_pedido"):
-            pedido_data["estado_pedido"] = "PENDIENTE"
+        pedido_data["estado_pedido"] = (pedido_data.get("estado_pedido") or "PENDIENTE").upper()
+        pedido_data["total"] = total
 
-        # Guardar pedido principal
-        db_item = PedidoModel(**pedido_data)
-        db.add(db_item)
-        db.commit()
-        db.refresh(db_item)
-
-        # Registrar los detalles (sin el atributo precio_unitario)
-        for item in detalles_calculados:
-            db_detalle = DetallePedidoModel(
-                id_pedidos=db_item.id_pedidos,
-                id_productos=item["producto"].id_productos,
-                cantidad=item["cantidad"],
-                subtotal=item["subtotal"]
-            )
-            db.add(db_detalle)
-            
-            # Descontar stock
-            PedidoService._modificar_stock(item["producto"], -item["cantidad"])
-            
-            # Si el stock llega a 0 o menos, actualizar estado
-            if PedidoService._obtener_stock(item["producto"]) <= 0:
-                if hasattr(item["producto"], "estado_producto"):
-                    item["producto"].estado_producto = "Agotado"
-                elif hasattr(item["producto"], "estado"):
-                    item["producto"].estado = "vendido"
-
-            db.add(item["producto"])
-
-        db.commit()
-        db.refresh(db_item)
-        
-        return PedidoService.obtener_por_id(db, db_item.id_pedidos)
+        try:
+            pedido = PedidoModel(**pedido_data)
+            db.add(pedido)
+            db.flush()
+            for producto, cantidad, subtotal in detalles_calculados:
+                db.add(DetallePedidoModel(
+                    id_pedidos=pedido.id_pedidos,
+                    id_productos=producto.id_productos,
+                    cantidad=cantidad,
+                    subtotal=subtotal,
+                ))
+                PedidoService._modificar_stock(producto, -cantidad)
+                if PedidoService._obtener_stock(producto) == 0:
+                    producto.estado_producto = "Agotado"
+                db.add(producto)
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+        return PedidoService.obtener_por_id(db, pedido.id_pedidos)
 
     @staticmethod
     def obtener_todos(db: Session) -> list[PedidoModel]:
@@ -137,50 +111,30 @@ class PedidoService:
 
     @staticmethod
     def actualizar(db: Session, id_pedidos: int, data: PedidoUpdate) -> PedidoModel:
-        db_item = PedidoService.obtener_por_id(db, id_pedidos)
-        datos_actualizacion = data.model_dump(exclude_unset=True)
-        
-        # RB08, RB09 — Control de estados y restricciones de cancelación
-        if "estado_pedido" in datos_actualizacion:
-            nuevo_estado = datos_actualizacion["estado_pedido"].upper()
-            estado_actual = db_item.estado_pedido.upper() if db_item.estado_pedido else ""
-
-            # Un pedido COMPLETADO o ENTREGADO no puede pasar a CANCELADO
-            if estado_actual in ["COMPLETADO", "ENTREGADO"] and nuevo_estado == "CANCELADO":
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="❌ No se puede cancelar un pedido que ya ha sido completado o entregado."
-                )
-            
-            # Si se completa o entrega, verificar disponibilidad del producto (si stock <= 0, pasa a Agotado)
-            if nuevo_estado in ["COMPLETADO", "ENTREGADO"]:
-                for detalle in db_item.detalles:
-                    producto = db.query(ProductoModel).filter(ProductoModel.id_productos == detalle.id_productos).first()
-                    if producto and PedidoService._obtener_stock(producto) <= 0:
-                        if hasattr(producto, "estado_producto"):
-                            producto.estado_producto = "Agotado"
-                        elif hasattr(producto, "estado"):
-                            producto.estado = "vendido"
-                        db.add(producto)
-
-            # Si se cancela el pedido, devolvemos el stock y cambiamos la disponibilidad a Disponible
-            if nuevo_estado == "CANCELADO" and estado_actual != "CANCELADO":
-                for detalle in db_item.detalles:
-                    producto = db.query(ProductoModel).filter(ProductoModel.id_productos == detalle.id_productos).first()
+        pedido = PedidoService.obtener_por_id(db, id_pedidos)
+        cambios = data.model_dump(exclude_unset=True)
+        if "estado_pedido" in cambios and cambios["estado_pedido"] is not None:
+            nuevo = cambios["estado_pedido"].upper()
+            actual = (pedido.estado_pedido or "").upper()
+            if actual in {"COMPLETADO", "ENTREGADO"} and nuevo == "CANCELADO":
+                raise HTTPException(status_code=400, detail="No se puede cancelar un pedido completado o entregado.")
+            if actual == "CANCELADO" and nuevo != "CANCELADO":
+                raise HTTPException(status_code=400, detail="No se puede cambiar el estado de un pedido cancelado.")
+            if nuevo == "CANCELADO" and actual != "CANCELADO":
+                for detalle in pedido.detalles:
+                    producto = db.query(ProductoModel).filter(
+                        ProductoModel.id_productos == detalle.id_productos
+                    ).first()
                     if producto:
                         PedidoService._modificar_stock(producto, detalle.cantidad)
-                        if hasattr(producto, "estado_producto"):
-                            producto.estado_producto = "Disponible"
-                        elif hasattr(producto, "estado"):
-                            producto.estado = "disponible"
+                        producto.estado_producto = "Disponible"
                         db.add(producto)
-
-        for key, value in datos_actualizacion.items():
-            setattr(db_item, key, value)
-            
+            cambios["estado_pedido"] = nuevo
+        for campo, valor in cambios.items():
+            setattr(pedido, campo, valor)
         db.commit()
-        db.refresh(db_item)
-        return PedidoService.obtener_por_id(db, db_item.id_pedidos)
+        db.refresh(pedido)
+        return PedidoService.obtener_por_id(db, pedido.id_pedidos)
 
     @staticmethod
     def eliminar(db: Session, id_pedidos: int) -> dict:

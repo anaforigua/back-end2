@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 # Esquema ligero para mostrar los datos del rol anidados
 class RolInfoRead(BaseModel):
@@ -7,8 +7,7 @@ class RolInfoRead(BaseModel):
     nombre_rol: str
     descripcion: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class RolUsuarioBase(BaseModel):
     id_usuario: int = Field(..., gt=0, description="❌ El ID del usuario es obligatorio y válido")
@@ -26,5 +25,4 @@ class RolUsuarioRead(RolUsuarioBase):
     # Muestra automáticamente la información detallada del rol al consultar
     rol: Optional[RolInfoRead] = None  
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

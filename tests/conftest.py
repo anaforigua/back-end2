@@ -1,18 +1,29 @@
+"""Fixtures compartidas.
+
+- BD: SQLite en memoria (no toca tu PostgreSQL).
+- App: se arma aqui con todos los routers, sin depender de main.py.
+- Cada test recibe una BD limpia.
+"""
 import copy
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
+
 from app.database import Base, get_db
+
+# Importar todos los modelos registra las tablas en Base.metadata
 from app.models.categorias import CategoriaModel
 from app.models.pais_de_origen import PaisDeOrigenModel
 from app.models.producto import ProductoModel
 from app.models.rol import Rol
-from app.models import (
+from app.models import (  # noqa: F401
     detalle_pedido, pedido, red_social, roles_usuarios, usuario,
 )
+
 from app.routes import (
     categorias_route,
     detalle_pedido_route,
@@ -67,6 +78,9 @@ def client(db):
         yield c
 
 
+# --------------------------------------------------------------------------
+# Datos base (se insertan directo en la BD para no depender de otras rutas)
+# --------------------------------------------------------------------------
 @pytest.fixture()
 def roles(db):
     """Crea los 3 roles del sistema. Quedan con id 1, 2 y 3."""
@@ -98,6 +112,9 @@ def pais(db):
     return p
 
 
+# --------------------------------------------------------------------------
+# Payloads de ejemplo (fixtures que devuelven copias, para poder modificarlas)
+# --------------------------------------------------------------------------
 _USUARIO = {
     "nombre": "Ana",
     "apellidos": "Lopez",

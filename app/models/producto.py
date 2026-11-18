@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Text, Float, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -15,7 +15,7 @@ class ProductoModel(Base):
     condicion_producto = Column(String, nullable=False)
     estado_producto = Column(String, nullable=False)
     cantidad = Column(Integer, nullable=False)
-    fecha_publicacion = Column(DateTime, nullable=False, default=datetime.utcnow)
+    fecha_publicacion = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     id_categoria = Column(Integer, ForeignKey("categorias.id_categoria"), nullable=False)
     
     # Clave foránea al país de origen

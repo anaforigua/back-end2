@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 class PaisDeOrigenBase(BaseModel):
     nombre_pais: str
@@ -13,5 +13,4 @@ class PaisDeOrigenUpdate(BaseModel):
 class PaisDeOrigenRead(PaisDeOrigenBase):
     id_pais_de_origen: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

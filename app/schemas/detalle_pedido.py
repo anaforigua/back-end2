@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from app.schemas.producto import ProductoRead
 
 class DetallePedidoBase(BaseModel):
@@ -22,5 +22,4 @@ class DetallePedidoRead(DetallePedidoBase):
     id_pedidos: Optional[int] = None
     producto: Optional[ProductoRead] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

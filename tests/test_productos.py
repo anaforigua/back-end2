@@ -19,6 +19,11 @@ def test_crear_producto_incluye_categoria_y_pais(client, payload_producto):
     assert data["pais_de_origen"]["nombre_pais"] == "Colombia"
 
 
+def test_crear_producto_acepta_alias_nombre(client, payload_producto):
+    payload_producto["nombre"] = payload_producto.pop("nombre_producto")
+    assert client.post("/productos/", json=payload_producto).status_code == 201
+
+
 @pytest.mark.parametrize(
     "cambio",
     [
@@ -29,7 +34,7 @@ def test_crear_producto_incluye_categoria_y_pais(client, payload_producto):
         {"cantidad": -1},
     ],
 )
-def test_crear_producto_datos_invalidos(client, payload_producto, cambio):
+def test_crear_producto_datos_invalidos_422(client, payload_producto, cambio):
     payload_producto.update(cambio)
     assert client.post("/productos/", json=payload_producto).status_code == 422
 
@@ -39,14 +44,14 @@ def test_crear_producto_con_cantidad_cero_devuelve_400(client, payload_producto)
     assert client.post("/productos/", json=payload_producto).status_code == 400
 
 
-def test_crear_producto_categoria_inexistente(client, payload_producto):
+def test_crear_producto_categoria_inexistente_404(client, payload_producto):
     payload_producto["id_categoria"] = 9999
     r = client.post("/productos/", json=payload_producto)
     assert r.status_code == 404
     assert "categor" in r.json()["detail"].lower()
 
 
-def test_crear_producto_pais_inexistente(client, payload_producto):
+def test_crear_producto_pais_inexistente_404(client, payload_producto):
     payload_producto["id_pais_de_origen"] = 9999
     r = client.post("/productos/", json=payload_producto)
     assert r.status_code == 404
@@ -59,6 +64,7 @@ def test_producto_invalido_no_se_guarda(client, payload_producto):
     assert client.get("/productos/").json()["data"] == []
 
 
+# ------------------------------- Listar -----------------------------------
 def test_listar_productos_vacio(client):
     r = client.get("/productos/")
     assert r.status_code == 200 and r.json()["data"] == []
@@ -73,7 +79,7 @@ def test_listar_productos_devuelve_los_publicados(client, payload_producto):
     assert len(data) == 2
 
 
-def test_obtener_producto_inexistente(client):
+def test_obtener_producto_inexistente_404(client):
     assert client.get("/productos/9999").status_code == 404
 
 
@@ -83,6 +89,7 @@ def test_obtener_producto_por_id(client, producto_creado):
     assert r.json()["data"]["descripcion"] == "Casio fx-991, poco uso"
 
 
+# ----------------------------- Actualizar ---------------------------------
 def test_actualizar_precio(client, producto_creado):
     pid = producto_creado["id_productos"]
     r = client.put(f"/productos/{pid}", json={"precio": 45000})
@@ -96,27 +103,28 @@ def test_actualizar_parcial_no_borra_otros_campos(client, producto_creado):
     assert r.json()["data"]["precio"] == 50000.0
 
 
-def test_actualizar_precio_negativo(client, producto_creado):
+def test_actualizar_precio_negativo_400(client, producto_creado):
     pid = producto_creado["id_productos"]
     assert client.put(f"/productos/{pid}", json={"precio": -5}).status_code == 400
 
 
-def test_actualizar_categoria_inexistente(client, producto_creado):
+def test_actualizar_categoria_inexistente_404(client, producto_creado):
     pid = producto_creado["id_productos"]
     assert client.put(f"/productos/{pid}", json={"id_categoria": 9999}).status_code == 404
 
 
-def test_actualizar_producto_inexistente(client):
+def test_actualizar_producto_inexistente_404(client):
     assert client.put("/productos/9999", json={"precio": 10}).status_code == 404
 
 
+# ------------------------------ Eliminar ----------------------------------
 def test_eliminar_producto(client, producto_creado):
     pid = producto_creado["id_productos"]
     assert client.delete(f"/productos/{pid}").status_code == 200
     assert client.get(f"/productos/{pid}").status_code == 404
 
 
-def test_eliminar_producto_inexistente(client):
+def test_eliminar_producto_inexistente_404(client):
     assert client.delete("/productos/9999").status_code == 404
 
 

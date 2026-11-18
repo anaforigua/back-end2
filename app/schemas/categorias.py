@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 class CategoriaBase(BaseModel):
     nombre_categoria: str = Field(..., min_length=4, description="El nombre no puede estar vacío")
@@ -31,5 +31,4 @@ class CategoriaUpdate(BaseModel):
 class CategoriaRead(CategoriaBase):
     id_categoria: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
