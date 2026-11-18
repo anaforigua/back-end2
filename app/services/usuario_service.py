@@ -3,6 +3,7 @@ from fastapi import HTTPException, status
 from app.models.usuario import UsuarioModel
 from app.models.roles_usuarios import RolUsuarioModel
 from app.schemas.usuario import UsuarioCreate, UsuarioUpdate
+from app.services.security import hash_password, verify_password
 
 class UsuarioService:
     @staticmethod
@@ -15,6 +16,7 @@ class UsuarioService:
             )
 
         datos_usuario = data.model_dump(exclude={"id_roles"})
+        datos_usuario["contrasena"] = hash_password(datos_usuario["contrasena"])
         db_item = UsuarioModel(**datos_usuario)
         
         db.add(db_item)
@@ -33,6 +35,18 @@ class UsuarioService:
 
         return db_item
 
+####------Funcion aunteticar correo/contraseña
+    @staticmethod
+    def autenticar(db: Session, email: str, contrasena: str) -> UsuarioModel:
+        usuario = db.query(UsuarioModel).filter(UsuarioModel.email == email).first()
+        if not usuario or not verify_password(contrasena, usuario.contrasena):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Correo o contraseña incorrecto."
+            )
+        return usuario
+    
+##
     @staticmethod
     def obtener_todos(db: Session) -> list[UsuarioModel]:
         return db.query(UsuarioModel).all()
@@ -49,14 +63,22 @@ class UsuarioService:
         db_item = UsuarioService.obtener_por_id(db, id_usuarios)
         
         datos_actualizacion = data.model_dump(exclude_unset=True, exclude={"id_roles"})
+
+##Cambios en el bloque de actualizar contraseña
+        nueva = datos_actualizacion.get("contrasena")
         
-        if "contrasena" in datos_actualizacion and datos_actualizacion["contrasena"]:
-            if datos_actualizacion["contrasena"] == db_item.contrasena:
+#####Condicional de duplicado
+        if nueva:
+            if verify_password(nueva, db_item.contrasena):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="La nueva contraseña no puede ser igual a la anterior."
                 )
-        
+            datos_actualizacion["contrasena"] = hash_password(nueva)
+        else:
+            datos_actualizacion.pop("contrasena", None)
+
+##
         for key, value in datos_actualizacion.items():
             setattr(db_item, key, value)
             

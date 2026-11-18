@@ -2,7 +2,7 @@ from typing import List
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.schemas.usuario import UsuarioCreate, UsuarioUpdate, UsuarioRead
+from app.schemas.usuario import UsuarioCreate, UsuarioUpdate, UsuarioRead, UsuarioLogin
 from app.services.usuario_service import UsuarioService
 
 router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
@@ -13,6 +13,16 @@ async def crear_usuario(data: UsuarioCreate, db: Session = Depends(get_db)):
     return {
         "status": "success",
         "mensaje": "Usuario creado exitosamente",
+        "data": UsuarioRead.model_validate(usuario)
+    }
+
+## Ruta del login del usuario
+@router.post("/login")
+async def login(data: UsuarioLogin, db: Session = Depends(get_db)):
+    usuario = UsuarioService.autenticar(db, data.email, data.contrasena)
+    return {
+        "status": "success",
+        "mensaje": "Inicio de sesión exitoso",
         "data": UsuarioRead.model_validate(usuario)
     }
 

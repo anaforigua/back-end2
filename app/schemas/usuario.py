@@ -14,7 +14,7 @@ class UsuarioBase(BaseModel):
     biografia: str
     ubicacion: str
     email: str
-    contrasena: str = Field(..., min_length=6)
+    contrasena: str = Field(..., min_length=6, max_length=72)
     calificacion: float
     estado_usuario: str
     id_roles: List[int]
@@ -42,7 +42,7 @@ class UsuarioUpdate(BaseModel):
     biografia: Optional[str] = None
     ubicacion: Optional[str] = None
     email: Optional[str] = None
-    contrasena: Optional[str] = None
+    contrasena: Optional[str] = Field(None, min_length=6, max_length=72)
     calificacion: Optional[float] = None
     estado_usuario: Optional[str] = None
     id_roles: Optional[List[int]] = None
@@ -60,3 +60,8 @@ class UsuarioRead(BaseModel):
     roles: List[RolResumenRead] = []
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+## Clase del login de un usuario
+class UsuarioLogin(BaseModel):
+    email: str
+    contrasena: str
