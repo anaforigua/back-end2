@@ -2,51 +2,47 @@ import React, { useState, useMemo } from "react";
 import { Field } from "../components/Field";
 import { ProductCard } from "../components/ProductCard";
 import { CartModal } from "../components/modals/CartModal";
-
-interface Product {
-  id?: number | string;
-  name: string;
-  description: string;
-  price: number;
-  stock: number;
-  category: string;
-  emoji?: string;
-  [key: string]: any;
-}
-
-interface CartItem {
-  id: number | string;
-  qty: number;
-}
+import { Product, CartItem, ProductId } from "../types/product";
 
 interface BuyerViewProps {
   products: Product[];
   cart: CartItem[];
-  onAddCart: (id: number | string) => void;
-  onChangeQty: (id: number | string, delta: number) => void;
+  onAddCart: (id: ProductId) => void;
+  onChangeQty: (id: ProductId, delta: number) => void;
   onCheckout: () => void;
 }
 
-export function BuyerView({ products, cart, onAddCart, onChangeQty, onCheckout }: BuyerViewProps) {
+export function BuyerView({
+  products,
+  cart,
+  onAddCart,
+  onChangeQty,
+  onCheckout,
+}: BuyerViewProps) {
   const [search, setSearch] = useState<string>("");
   const [category, setCategory] = useState<string>("Todas");
   const [cartOpen, setCartOpen] = useState<boolean>(false);
 
-  const categories = ["Todas", ...new Set(products.map((p: Product) => p.category))];
+  const categories = useMemo(
+    () => ["Todas", ...new Set(products.map((p) => p.category))],
+    [products]
+  );
 
   const filtered = useMemo(() => {
-    return products.filter((p: Product) => {
+    const query = search.trim().toLowerCase();
+    return products.filter((p) => {
       const matchCat = category === "Todas" || p.category === category;
       const matchText =
-        p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.description.toLowerCase().includes(search.toLowerCase());
+        !query ||
+        p.name.toLowerCase().includes(query) ||
+        p.description.toLowerCase().includes(query);
       return matchCat && matchText;
     });
   }, [products, search, category]);
 
   const total = cart.reduce((sum: number, item: CartItem) => {
-    const p = products.find((x: Product) => x.id === item.id);
-    return sum + (p ? p.price * item.qty : 0);
+    const p = products.find((x) => x.id === item.id);
+    return sum + (p ? Number(p.price) * item.qty : 0);
   }, 0);
 
   const totalCartItems = cart.reduce((s: number, i: CartItem) => s + i.qty, 0);
@@ -58,7 +54,7 @@ export function BuyerView({ products, cart, onAddCart, onChangeQty, onCheckout }
           <h1>Catálogo de productos</h1>
           <p>Encuentra lo que necesitas y compra en pocos pasos.</p>
         </div>
-        <button className="btn" onClick={() => setCartOpen(true)}>
+        <button type="button" className="btn" onClick={() => setCartOpen(true)}>
           Carrito ({totalCartItems})
         </button>
       </div>
@@ -83,11 +79,21 @@ export function BuyerView({ products, cart, onAddCart, onChangeQty, onCheckout }
       </div>
 
       <div className="product-grid">
-        {filtered.map((p: Product) => (
-          <ProductCard key={p.id} product={p} onBuy={() => onAddCart(p.id!)} />
+        {filtered.map((p) => (
+          <ProductCard
+            key={String(p.id ?? p.name)}
+            product={p}
+            onBuy={() => {
+              if (p.id !== undefined) {
+                onAddCart(p.id);
+              }
+            }}
+          />
         ))}
       </div>
-      {!filtered.length && <div className="card empty">No encontramos productos con esos filtros.</div>}
+      {!filtered.length && (
+        <div className="card empty">No encontramos productos con esos filtros.</div>
+      )}
 
       {cartOpen && (
         <CartModal

@@ -7,16 +7,39 @@ interface LoginViewProps {
   onLogin: (email: string) => void;
 }
 
+function hasSuspiciousMarkup(value: string): boolean {
+  return /<\s*\/?\s*script|javascript:|on\w+\s*=/i.test(value);
+}
+
 export function LoginView({ onLogin }: LoginViewProps) {
   const navigate = useNavigate();
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [errorMsg, setErrorMsg] = useState<string>("");
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return;
-    onLogin(email);
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!cleanEmail || !password) {
+      setErrorMsg("Completa tu correo electrónico y contraseña.");
+      return;
+    }
+
+    if (hasSuspiciousMarkup(cleanEmail) || hasSuspiciousMarkup(password)) {
+      setErrorMsg("El correo o la contraseña contienen caracteres no permitidos.");
+      return;
+    }
+
+    if (/\s/.test(password)) {
+      setErrorMsg("La contraseña no puede contener espacios.");
+      return;
+    }
+
+    setErrorMsg("");
+    setPassword("");
+    onLogin(cleanEmail);
     navigate("/roles");
   };
 
@@ -44,6 +67,7 @@ export function LoginView({ onLogin }: LoginViewProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@revenfy.com"
+                autoComplete="email"
                 required
               />
             </Field>
@@ -53,14 +77,25 @@ export function LoginView({ onLogin }: LoginViewProps) {
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === " ") {
+                      e.preventDefault();
+                      setErrorMsg("La contraseña no puede contener espacios.");
+                    }
+                  }}
+                  onChange={(e) => {
+                    const nextValue = e.target.value.replace(/\s+/g, "");
+                    setPassword(nextValue);
+                  }}
                   placeholder="••••••••"
+                  autoComplete="current-password"
                   style={{ width: "100%", paddingRight: "40px" }}
                   required
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  onClick={() => setShowPassword((prev) => !prev)}
                   style={{
                     position: "absolute",
                     right: "12px",
@@ -74,6 +109,12 @@ export function LoginView({ onLogin }: LoginViewProps) {
                 </button>
               </div>
             </Field>
+
+            {errorMsg && (
+              <p className="muted" role="alert" style={{ color: "#ef4444", margin: 0 }}>
+                {errorMsg}
+              </p>
+            )}
 
             <button type="submit" className="btn">
               Entrar

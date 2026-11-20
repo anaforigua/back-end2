@@ -1,7 +1,6 @@
-// src/views/AdminView.tsx
 import React, { useState, useEffect, useMemo } from "react";
 import { User } from "../types/user";
-import { Product } from "../types/product";
+import { Product, ProductId } from "../types/product";
 import { userService } from "../services/userService";
 import { UserModal } from "../components/modals/UserModal";
 import { UserAvatar } from "../components/UserAvatar";
@@ -23,7 +22,7 @@ interface AdminViewProps {
   orders?: AdminOrder[];
   onAddProduct: (product: Product) => void;
   onUpdateProduct: (product: Product) => void;
-  onDeleteProduct: (id: number | string) => void;
+  onDeleteProduct: (id: ProductId) => void;
   onNotify: (msg: string) => void;
 }
 
@@ -42,6 +41,20 @@ const emptyProductForm: Product = {
   emoji: "📦",
 };
 
+function isSafeImagePreview(src: string | undefined): boolean {
+  if (!src) return false;
+  const trimmed = src.trim();
+  return (
+    trimmed.startsWith("data:image/jpeg") ||
+    trimmed.startsWith("data:image/jpg") ||
+    trimmed.startsWith("data:image/png") ||
+    trimmed.startsWith("data:image/webp") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("/")
+  );
+}
+
 export function AdminView({
   products,
   orders = [],
@@ -52,7 +65,6 @@ export function AdminView({
 }: AdminViewProps) {
   const [activeTab, setActiveTab] = useState<"users" | "products">("users");
 
-  // Estado de Usuarios
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState<boolean>(true);
   const [userSearch, setUserSearch] = useState<string>("");
@@ -61,7 +73,6 @@ export function AdminView({
   const [isUserModalOpen, setIsUserModalOpen] = useState<boolean>(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
-  // Estado de Productos (CRUD Admin)
   const [productSearch, setProductSearch] = useState<string>("");
   const [isProductFormOpen, setIsProductFormOpen] = useState<boolean>(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -83,15 +94,12 @@ export function AdminView({
     fetchUsers();
   }, []);
 
-  // Calcula métricas precisas por usuario combinando datos del backend y estado local
   const getUserMetrics = (user: User) => {
     const isSeller = (user.id_roles || []).includes(2);
     const isBuyer = (user.id_roles || []).includes(3);
 
     const matchedProducts = products.filter(
-      (p) =>
-        p.ownerEmail?.toLowerCase() === user.email.toLowerCase() ||
-        p.id_usuario === user.id_usuarios
+      (p) => p.sellerId !== undefined && String(p.sellerId) === String(user.id_usuarios ?? "")
     );
 
     const matchedPurchases = orders
@@ -121,12 +129,13 @@ export function AdminView({
     return { published, purchased, sold };
   };
 
-  // Handlers CRUD Usuarios
   const handleSaveUser = async (userData: Omit<User, "id_usuarios">, id?: number) => {
     try {
       if (id !== undefined) {
         const updated = await userService.update(id, userData);
-        setUsers((prev) => prev.map((u) => (u.id_usuarios === id ? { ...u, ...updated } : u)));
+        setUsers((prev) =>
+          prev.map((u) => (u.id_usuarios === id ? { ...u, ...updated } : u))
+        );
         onNotify("Usuario actualizado correctamente");
       } else {
         const created = await userService.create(userData);
@@ -156,7 +165,11 @@ export function AdminView({
 
   const handleDeleteUser = async (user: User) => {
     if (!user.id_usuarios) return;
-    if (!window.confirm(`¿Eliminar permanentemente al usuario ${user.nombre} ${user.apellidos}?`)) {
+    if (
+      !window.confirm(
+        `¿Eliminar permanentemente al usuario ${user.nombre} ${user.apellidos}?`
+      )
+    ) {
       return;
     }
     try {
@@ -168,7 +181,6 @@ export function AdminView({
     }
   };
 
-  // Handlers CRUD Productos
   const openNewProductForm = () => {
     setEditingProduct(null);
     setProductForm(emptyProductForm);
@@ -183,24 +195,35 @@ export function AdminView({
 
   const handleProductSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const sanitizedProduct: Product = {
+      ...productForm,
+      name: productForm.name.trim(),
+      category: productForm.category.trim(),
+      description: productForm.description.trim(),
+      price: Math.max(0, Number(productForm.price) || 0),
+      stock: Math.max(0, Math.floor(Number(productForm.stock) || 0)),
+    };
+
     if (editingProduct) {
-      onUpdateProduct({ ...productForm, id: editingProduct.id });
+      onUpdateProduct({ ...sanitizedProduct, id: editingProduct.id });
     } else {
-      onAddProduct(productForm);
+      onAddProduct(sanitizedProduct);
     }
     setIsProductFormOpen(false);
     setEditingProduct(null);
   };
 
-  // Filtros memorizados
   const filteredUsers = useMemo(() => {
+    const q = userSearch.trim().toLowerCase();
     return users.filter((u) => {
       const matchesText =
+        !q ||
         `${u.nombre} ${u.apellidos} ${u.email} ${u.ubicacion}`
           .toLowerCase()
-          .includes(userSearch.toLowerCase());
+          .includes(q);
       const matchesStatus =
-        statusFilter === "TODOS" || u.estado_usuario.toLowerCase() === statusFilter.toLowerCase();
+        statusFilter === "TODOS" ||
+        u.estado_usuario.toLowerCase() === statusFilter.toLowerCase();
       const matchesRole =
         roleFilter === "TODOS" || (u.id_roles || []).includes(Number(roleFilter));
       return matchesText && matchesStatus && matchesRole;
@@ -208,10 +231,11 @@ export function AdminView({
   }, [users, userSearch, statusFilter, roleFilter]);
 
   const filteredProducts = useMemo(() => {
-    return products.filter((p) =>
-      `${p.name} ${p.category} ${p.description}`
-        .toLowerCase()
-        .includes(productSearch.toLowerCase())
+    const q = productSearch.trim().toLowerCase();
+    return products.filter(
+      (p) =>
+        !q ||
+        `${p.name} ${p.category} ${p.description}`.toLowerCase().includes(q)
     );
   }, [products, productSearch]);
 
@@ -220,10 +244,20 @@ export function AdminView({
 
   return (
     <main style={{ maxWidth: "1250px", margin: "90px auto 110px", padding: "0 20px" }}>
-      {/* Encabezado */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px", marginBottom: "24px" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "16px",
+          marginBottom: "24px",
+        }}
+      >
         <div>
-          <h1 style={{ margin: 0 }}>Panel de Administración <span>Revenfy</span></h1>
+          <h1 style={{ margin: 0 }}>
+            Panel de Administración <span>Revenfy</span>
+          </h1>
           <p className="muted" style={{ margin: "4px 0 0" }}>
             Control de usuarios, roles, actividad de compra/venta y CRUD del catálogo
           </p>
@@ -249,7 +283,6 @@ export function AdminView({
         </div>
       </div>
 
-      {/* Tarjetas de Resumen (KPIs) */}
       <div
         style={{
           display: "grid",
@@ -276,7 +309,6 @@ export function AdminView({
         </div>
       </div>
 
-      {/* PESTAÑA 1: GESTIÓN E HISTORIAL DE USUARIOS */}
       {activeTab === "users" && (
         <section className="card" style={{ padding: "20px" }}>
           <div
@@ -368,11 +400,16 @@ export function AdminView({
                   {filteredUsers.map((user) => {
                     const stats = getUserMetrics(user);
                     const mapsUrl = user.ubicacion
-                      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(user.ubicacion)}`
+                      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                          user.ubicacion
+                        )}`
                       : "";
 
                     return (
-                      <tr key={user.id_usuarios ?? user.email} style={{ borderBottom: "1px solid #1e2952" }}>
+                      <tr
+                        key={user.id_usuarios ?? user.email}
+                        style={{ borderBottom: "1px solid #1e2952" }}
+                      >
                         <td style={{ padding: "12px 8px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                             <UserAvatar
@@ -381,8 +418,12 @@ export function AdminView({
                               size={42}
                             />
                             <div>
-                              <strong>{user.nombre} {user.apellidos}</strong>
-                              <div className="muted" style={{ fontSize: "0.82rem" }}>{user.email}</div>
+                              <strong>
+                                {user.nombre} {user.apellidos}
+                              </strong>
+                              <div className="muted" style={{ fontSize: "0.82rem" }}>
+                                {user.email}
+                              </div>
                               <div className="muted" style={{ fontSize: "0.78rem" }}>
                                 {user.ubicacion ? (
                                   <a
@@ -425,7 +466,14 @@ export function AdminView({
                         </td>
 
                         <td style={{ padding: "12px 8px" }}>
-                          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", fontSize: "0.8rem" }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "8px",
+                              flexWrap: "wrap",
+                              fontSize: "0.8rem",
+                            }}
+                          >
                             <span
                               title="Productos publicados en catálogo"
                               style={{
@@ -472,8 +520,10 @@ export function AdminView({
                               borderRadius: "12px",
                               fontSize: "0.8rem",
                               fontWeight: 600,
-                              background: user.estado_usuario === "Activo" ? "#dcfce7" : "#fee2e2",
-                              color: user.estado_usuario === "Activo" ? "#166534" : "#991b1b",
+                              background:
+                                user.estado_usuario === "Activo" ? "#dcfce7" : "#fee2e2",
+                              color:
+                                user.estado_usuario === "Activo" ? "#166534" : "#991b1b",
                             }}
                           >
                             {user.estado_usuario}
@@ -496,7 +546,11 @@ export function AdminView({
                             <button
                               type="button"
                               className="btn"
-                              style={{ padding: "5px 10px", fontSize: "0.8rem", opacity: 0.85 }}
+                              style={{
+                                padding: "5px 10px",
+                                fontSize: "0.8rem",
+                                opacity: 0.85,
+                              }}
                               onClick={() => handleToggleUserStatus(user)}
                             >
                               {user.estado_usuario === "Activo" ? "Suspender" : "Activar"}
@@ -521,7 +575,11 @@ export function AdminView({
                   })}
                   {filteredUsers.length === 0 && (
                     <tr>
-                      <td colSpan={5} style={{ padding: "20px", textAlign: "center" }} className="muted">
+                      <td
+                        colSpan={5}
+                        style={{ padding: "20px", textAlign: "center" }}
+                        className="muted"
+                      >
                         No se encontraron usuarios con ese criterio.
                       </td>
                     </tr>
@@ -533,7 +591,6 @@ export function AdminView({
         </section>
       )}
 
-      {/* PESTAÑA 2: CRUD COMPLETO DE PRODUCTOS */}
       {activeTab === "products" && (
         <section className="card" style={{ padding: "20px" }}>
           <div
@@ -599,7 +656,9 @@ export function AdminView({
                 required
                 placeholder="Categoría"
                 value={productForm.category}
-                onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
+                onChange={(e) =>
+                  setProductForm({ ...productForm, category: e.target.value })
+                }
                 style={{
                   padding: "9px 12px",
                   borderRadius: "8px",
@@ -614,7 +673,12 @@ export function AdminView({
                 min={0}
                 placeholder="Precio COP"
                 value={productForm.price}
-                onChange={(e) => setProductForm({ ...productForm, price: Number(e.target.value) })}
+                onChange={(e) =>
+                  setProductForm({
+                    ...productForm,
+                    price: Math.max(0, Number(e.target.value)),
+                  })
+                }
                 style={{
                   padding: "9px 12px",
                   borderRadius: "8px",
@@ -629,7 +693,12 @@ export function AdminView({
                 min={0}
                 placeholder="Stock"
                 value={productForm.stock}
-                onChange={(e) => setProductForm({ ...productForm, stock: Number(e.target.value) })}
+                onChange={(e) =>
+                  setProductForm({
+                    ...productForm,
+                    stock: Math.max(0, Math.floor(Number(e.target.value))),
+                  })
+                }
                 style={{
                   padding: "9px 12px",
                   borderRadius: "8px",
@@ -639,16 +708,20 @@ export function AdminView({
                 }}
               />
 
-              {/* Subir imagen del producto desde dispositivo */}
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <label
                   className="btn"
-                  style={{ padding: "8px 12px", fontSize: "0.82rem", cursor: "pointer", margin: 0 }}
+                  style={{
+                    padding: "8px 12px",
+                    fontSize: "0.82rem",
+                    cursor: "pointer",
+                    margin: 0,
+                  }}
                 >
                   📷 Subir Foto
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp"
                     style={{ display: "none" }}
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
@@ -657,16 +730,23 @@ export function AdminView({
                         const imgData = await compressProductImage(file);
                         setProductForm({ ...productForm, emoji: imgData, image: imgData });
                       } catch (err) {
-                        onNotify(err instanceof Error ? err.message : "Error al subir imagen");
+                        onNotify(
+                          err instanceof Error ? err.message : "Error al subir imagen"
+                        );
                       }
                     }}
                   />
                 </label>
-                {productForm.emoji?.startsWith("data:image") && (
+                {isSafeImagePreview(productForm.emoji) && (
                   <img
                     src={productForm.emoji}
                     alt="Vista previa"
-                    style={{ width: "40px", height: "40px", borderRadius: "8px", objectFit: "cover" }}
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      borderRadius: "8px",
+                      objectFit: "cover",
+                    }}
                   />
                 )}
               </div>
@@ -676,7 +756,9 @@ export function AdminView({
                 required
                 placeholder="Descripción"
                 value={productForm.description}
-                onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+                onChange={(e) =>
+                  setProductForm({ ...productForm, description: e.target.value })
+                }
                 style={{
                   padding: "9px 12px",
                   borderRadius: "8px",
@@ -686,7 +768,14 @@ export function AdminView({
                   gridColumn: "1 / -1",
                 }}
               />
-              <div style={{ display: "flex", gap: "8px", gridColumn: "1 / -1", justifyContent: "flex-end" }}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "8px",
+                  gridColumn: "1 / -1",
+                  justifyContent: "flex-end",
+                }}
+              >
                 <button
                   type="button"
                   className="btn"
@@ -715,20 +804,39 @@ export function AdminView({
               </thead>
               <tbody>
                 {filteredProducts.map((product) => (
-                  <tr key={product.id} style={{ borderBottom: "1px solid #1e2952" }}>
+                  <tr
+                    key={String(product.id ?? product.name)}
+                    style={{ borderBottom: "1px solid #1e2952" }}
+                  >
                     <td style={{ padding: "12px 8px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <div style={{ width: "44px", height: "44px", overflow: "hidden", borderRadius: "8px", flexShrink: 0 }}>
-                          <ProductMedia src={product.image || product.emoji} alt={product.name} height="44px" />
+                        <div
+                          style={{
+                            width: "44px",
+                            height: "44px",
+                            overflow: "hidden",
+                            borderRadius: "8px",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <ProductMedia
+                            src={product.image || product.emoji}
+                            alt={product.name}
+                            height="44px"
+                          />
                         </div>
                         <div>
                           <strong>{product.name}</strong>
-                          <div className="muted" style={{ fontSize: "0.8rem" }}>{product.description}</div>
+                          <div className="muted" style={{ fontSize: "0.8rem" }}>
+                            {product.description}
+                          </div>
                         </div>
                       </div>
                     </td>
                     <td style={{ padding: "12px 8px" }}>{product.category}</td>
-                    <td style={{ padding: "12px 8px" }}>${product.price.toLocaleString("es-CO")}</td>
+                    <td style={{ padding: "12px 8px" }}>
+                      ${Number(product.price || 0).toLocaleString("es-CO")}
+                    </td>
                     <td style={{ padding: "12px 8px" }}>
                       <span
                         style={{
@@ -758,7 +866,9 @@ export function AdminView({
                             background: "#dc2626",
                             color: "#fff",
                           }}
-                          onClick={() => product.id !== undefined && onDeleteProduct(product.id)}
+                          onClick={() =>
+                            product.id !== undefined && onDeleteProduct(product.id)
+                          }
                         >
                           Eliminar
                         </button>

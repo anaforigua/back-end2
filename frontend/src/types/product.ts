@@ -1,15 +1,32 @@
+export type ProductId = number | string;
+
 export interface Product {
-  id?: number | string;
+  id?: ProductId;
   name: string;
   description: string;
   price: number;
   stock: number;
   category: string;
   emoji?: string;
-  [key: string]: any;
+  image?: string;
+  imageUrl?: string;
+  sellerId?: number | string;
 }
 
+export interface ProductCreateInput {
+  name: string;
+  description: string;
+  price: number;
+  stock: number;
+  category: string;
+  emoji?: string;
+  image?: string;
+  imageUrl?: string;
+}
+
+export type ProductUpdateInput = Partial<ProductCreateInput>;
+
 export interface CartItem {
-  id: number | string;
+  id: ProductId;
   qty: number;
 }

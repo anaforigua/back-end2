@@ -20,13 +20,34 @@ export function RegisterView({ onRegister }: RegisterViewProps) {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [errorMsg, setErrorMsg] = useState<string>("");
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!firstName || !lastName || !email || !password) return;
+    const cleanFirstName = firstName.trim();
+    const cleanLastName = lastName.trim();
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
+    if (!cleanFirstName || !cleanLastName || !cleanEmail) {
+      setErrorMsg("Completa nombre, apellido y correo electrónico.");
+      return;
+    }
+
+    if (cleanPassword.length < 8) {
+      setErrorMsg("La contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
+
+    setErrorMsg("");
+    setPassword("");
 
     if (onRegister) {
-      onRegister({ firstName, lastName, email });
+      onRegister({
+        firstName: cleanFirstName,
+        lastName: cleanLastName,
+        email: cleanEmail,
+      });
     }
 
     navigate("/login");
@@ -56,6 +77,7 @@ export function RegisterView({ onRegister }: RegisterViewProps) {
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder="Tu nombre"
+                  autoComplete="given-name"
                   required
                 />
               </Field>
@@ -64,6 +86,7 @@ export function RegisterView({ onRegister }: RegisterViewProps) {
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Tu apellido"
+                  autoComplete="family-name"
                   required
                 />
               </Field>
@@ -75,6 +98,7 @@ export function RegisterView({ onRegister }: RegisterViewProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="correo@revenfy.com"
+                autoComplete="email"
                 required
               />
             </Field>
@@ -86,12 +110,14 @@ export function RegisterView({ onRegister }: RegisterViewProps) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
+                  autoComplete="new-password"
                   style={{ width: "100%", paddingRight: "40px" }}
                   required
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  onClick={() => setShowPassword((prev) => !prev)}
                   style={{
                     position: "absolute",
                     right: "12px",
@@ -105,6 +131,12 @@ export function RegisterView({ onRegister }: RegisterViewProps) {
                 </button>
               </div>
             </Field>
+
+            {errorMsg && (
+              <p className="muted" role="alert" style={{ color: "#ef4444", margin: 0 }}>
+                {errorMsg}
+              </p>
+            )}
 
             <button type="submit" className="btn">
               Registrarse

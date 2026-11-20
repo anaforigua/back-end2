@@ -1,24 +1,13 @@
-// src/views/BothView.tsx
 import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { Stat } from "../components/Stat";
 import { ProductModal } from "../components/modals/ProductModal";
 import { SellerInventory } from "../components/SellerInventory";
+import { ApiError } from "../services/api";
 import { productService } from "../services/productService";
+import { Product, ProductId } from "../types/product";
 
-interface Product {
-  id?: number | string;
-  name: string;
-  description: string;
-  price: number;
-  stock: number;
-  category: string;
-  emoji?: string;
-  image?: string;
-  [key: string]: any;
-}
-
-interface Order {
+export interface Order {
   id: string;
   date: string;
   units: number;
@@ -26,51 +15,94 @@ interface Order {
   status: string;
 }
 
+interface BothProductPayload {
+  nombre: string;
+  descripcion: string;
+  precio: number;
+  cantidad: number;
+  condicion_producto: string;
+  id_categoria: number;
+  imagenes_producto: string;
+  estado_producto: string;
+  id_pais_de_origen: number;
+  [key: string]: unknown;
+}
+
+interface BothProductResponse {
+  data?: Partial<Product>;
+}
+
 interface BothViewProps {
   products: Product[];
   orders: Order[];
   onAdd?: (product: Product) => void;
   onUpdate?: (product: Product) => void;
-  onDelete?: (id: number | string) => void;
+  onDelete?: (id: ProductId) => void;
+  onNotify?: (msg: string) => void;
 }
 
-const money = (value: number) => "$" + Number(value).toLocaleString("es-CO");
+const money = (value: number) => "$" + Number(value || 0).toLocaleString("es-CO");
 
-export function BothView({ products, orders, onAdd, onUpdate, onDelete }: BothViewProps) {
+export function BothView({
+  products,
+  orders,
+  onAdd,
+  onUpdate,
+  onDelete,
+  onNotify,
+}: BothViewProps) {
   const [editing, setEditing] = useState<Product | null>(null);
 
-  const sales = orders.reduce((sum: number, o: Order) => sum + o.total, 0);
-  const totalStock = products.reduce((sum: number, p: Product) => sum + Number(p.stock), 0);
-  const outOfStockCount = products.filter((p: Product) => Number(p.stock) === 0).length;
+  const sales = orders.reduce((sum: number, o: Order) => sum + Number(o.total || 0), 0);
+  const totalStock = products.reduce((sum: number, p) => sum + Number(p.stock || 0), 0);
+  const outOfStockCount = products.filter((p) => Number(p.stock || 0) === 0).length;
 
   const handleSaveProduct = async (p: Product) => {
-    try {
-      const backendData = {
-        nombre: p.name,
-        descripcion: p.description || "Sin descripción",
-        precio: Number(p.price),
-        cantidad: Number(p.stock),
-        condicion_producto: "Nuevo",
-        id_categoria: 1,
-        imagenes_producto: p.image || p.emoji || "📦",
-        estado_producto: Number(p.stock) > 0 ? "Disponible" : "Agotado",
-        id_pais_de_origen: 1,
-      };
+    const safePrice = Math.max(0, Number(p.price) || 0);
+    const safeStock = Math.max(0, Math.floor(Number(p.stock) || 0));
+    const mediaValue = p.image || p.emoji || "📦";
 
-      if (p.id) {
-        await productService.update(p.id, backendData);
-        onUpdate?.(p);
+    const normalizedProduct: Product = {
+      ...p,
+      price: safePrice,
+      stock: safeStock,
+      emoji: mediaValue,
+      image: mediaValue,
+    };
+
+    const backendData: BothProductPayload = {
+      nombre: normalizedProduct.name.trim(),
+      descripcion: normalizedProduct.description.trim() || "Sin descripción",
+      precio: safePrice,
+      cantidad: safeStock,
+      condicion_producto: "Nuevo",
+      id_categoria: 1,
+      imagenes_producto: mediaValue,
+      estado_producto: safeStock > 0 ? "Disponible" : "Agotado",
+      id_pais_de_origen: 1,
+    };
+
+    try {
+      if (normalizedProduct.id !== undefined) {
+        await productService.update(normalizedProduct.id, backendData);
+        onUpdate?.(normalizedProduct);
       } else {
-        const response = await productService.create(backendData);
-        onAdd?.(response?.data ? { ...p, ...response.data } : p);
+        const response = await productService.create<BothProductResponse>(backendData);
+        onAdd?.(
+          response?.data ? { ...normalizedProduct, ...response.data } : normalizedProduct
+        );
       }
       setEditing(null);
     } catch (error) {
-      console.error("Error al guardar el producto:", error);
-      if (p.id) {
-        onUpdate?.(p);
+      if (error instanceof ApiError) {
+        onNotify?.(error.message);
+        return;
+      }
+
+      if (normalizedProduct.id !== undefined) {
+        onUpdate?.(normalizedProduct);
       } else {
-        onAdd?.(p);
+        onAdd?.(normalizedProduct);
       }
       setEditing(null);
     }
@@ -124,7 +156,6 @@ export function BothView({ products, orders, onAdd, onUpdate, onDelete }: BothVi
         </div>
       </div>
 
-      {/* Mis productos publicados con foto desde dispositivo */}
       <div style={{ marginTop: "24px" }}>
         <h2 style={{ marginBottom: "12px" }}>Mis productos publicados</h2>
         <SellerInventory

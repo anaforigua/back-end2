@@ -1,16 +1,25 @@
-// src/views/RolesView.tsx
 import React from "react";
 import { NavLink } from "react-router-dom";
 import { BrandLogo } from "../components/BrandLogo";
 
-export const ADMIN_EMAILS = [
-  "admin@revenfy.com",
-  "anamariaforigua20@gmail.com",
-  "anamaria.forigua@misena.edu.co",
-];
+const DEFAULT_ADMIN_EMAILS = ["admin@revenfy.com"];
+
+function getConfiguredAdminEmails(): string[] {
+  const envValue = import.meta.env.VITE_ADMIN_EMAILS as string | undefined;
+  if (!envValue) return DEFAULT_ADMIN_EMAILS;
+
+  const parsed = envValue
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+
+  return parsed.length > 0 ? parsed : DEFAULT_ADMIN_EMAILS;
+}
 
 export function isAdminEmail(email: string): boolean {
-  return ADMIN_EMAILS.includes(email.trim().toLowerCase());
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) return false;
+  return getConfiguredAdminEmails().includes(normalized);
 }
 
 interface RoleCardProps {
