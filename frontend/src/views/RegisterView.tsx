@@ -7,10 +7,11 @@ interface RegisterData {
   firstName: string;
   lastName: string;
   email: string;
+  password: string;
 }
 
 interface RegisterViewProps {
-  onRegister?: (data: RegisterData) => void;
+  onRegister: (data: RegisterData) => Promise<void>;
 }
 
 export function RegisterView({ onRegister }: RegisterViewProps) {
@@ -21,50 +22,46 @@ export function RegisterView({ onRegister }: RegisterViewProps) {
   const [password, setPassword] = useState<string>("");
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanFirstName = firstName.trim();
     const cleanLastName = lastName.trim();
     const cleanEmail = email.trim().toLowerCase();
-    const cleanPassword = password.trim();
 
-    if (!cleanFirstName || !cleanLastName || !cleanEmail) {
-      setErrorMsg("Completa nombre, apellido y correo electrónico.");
+    if (cleanFirstName.length < 3 || cleanLastName.length < 3 || !cleanEmail) {
+      setErrorMsg("El nombre y los apellidos deben tener al menos 3 caracteres.");
       return;
     }
-
-    if (cleanPassword.length < 8) {
+    if (password.length < 8) {
       setErrorMsg("La contraseña debe tener al menos 8 caracteres.");
       return;
     }
 
     setErrorMsg("");
-    setPassword("");
-
-    if (onRegister) {
-      onRegister({
-        firstName: cleanFirstName,
-        lastName: cleanLastName,
-        email: cleanEmail,
-      });
+    setSubmitting(true);
+    try {
+      await onRegister({ firstName: cleanFirstName, lastName: cleanLastName, email: cleanEmail, password });
+      setPassword("");
+      navigate("/login", { replace: true, state: { registered: true } });
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : "No se pudo crear la cuenta.");
+    } finally {
+      setSubmitting(false);
     }
-
-    navigate("/login");
   };
 
   return (
     <main className="login-page">
       <section className="login-shell">
         <div className="login-brand">
-          <div className="logo">
-            REVEN<span>FY</span>
-          </div>
+          <div className="logo">REVEN<span>FY</span></div>
           <div className="brand-copy">
             <h1>Únete.<br />Crea.<br />Expande.</h1>
             <p>Crea tu cuenta para gestionar productos, compras y ventas desde un solo lugar.</p>
           </div>
-          <div className="notice">Plataforma modular - Sincronizada con FastAPI</div>
+          <div className="notice">Registro de cuenta conectado con FastAPI</div>
         </div>
 
         <div className="login-form">
@@ -73,74 +70,28 @@ export function RegisterView({ onRegister }: RegisterViewProps) {
           <form onSubmit={submit} className="form">
             <div className="two">
               <Field label="Nombre">
-                <input
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="Tu nombre"
-                  autoComplete="given-name"
-                  required
-                />
+                <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Tu nombre" autoComplete="given-name" minLength={3} required />
               </Field>
               <Field label="Apellido">
-                <input
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Tu apellido"
-                  autoComplete="family-name"
-                  required
-                />
+                <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Tu apellido" autoComplete="family-name" minLength={3} required />
               </Field>
             </div>
 
             <Field label="Correo electrónico">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="correo@revenfy.com"
-                autoComplete="email"
-                required
-              />
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="correo@ejemplo.com" autoComplete="email" required />
             </Field>
 
             <Field label="Contraseña">
               <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  autoComplete="new-password"
-                  style={{ width: "100%", paddingRight: "40px" }}
-                  required
-                />
-                <button
-                  type="button"
-                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  style={{
-                    position: "absolute",
-                    right: "12px",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: "inherit",
-                  }}
-                >
+                <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} placeholder="Mínimo 8 caracteres" autoComplete="new-password" style={{ width: "100%", paddingRight: "40px" }} required />
+                <button type="button" aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"} onClick={() => setShowPassword((prev) => !prev)} style={{ position: "absolute", right: "12px", background: "none", border: "none", cursor: "pointer", color: "inherit" }}>
                   {showPassword ? <FiEyeOff /> : <FiEye />}
                 </button>
               </div>
             </Field>
 
-            {errorMsg && (
-              <p className="muted" role="alert" style={{ color: "#ef4444", margin: 0 }}>
-                {errorMsg}
-              </p>
-            )}
-
-            <button type="submit" className="btn">
-              Registrarse
-            </button>
+            {errorMsg && <p className="muted" role="alert" style={{ color: "#ef4444", margin: 0 }}>{errorMsg}</p>}
+            <button type="submit" className="btn" disabled={submitting}>{submitting ? "Creando cuenta..." : "Registrarse"}</button>
             <p className="muted" style={{ textAlign: "center", marginTop: "12px" }}>
               ¿Ya tienes cuenta? <Link to="/login">Inicia sesión</Link>
             </p>

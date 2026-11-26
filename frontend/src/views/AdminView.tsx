@@ -13,16 +13,17 @@ export interface AdminOrder {
   units: number;
   total: number;
   status: string;
-  buyerEmail?: string;
+  buyerId?: number;
   sellerEmail?: string;
 }
 
 interface AdminViewProps {
   products: Product[];
   orders?: AdminOrder[];
-  onAddProduct: (product: Product) => void;
-  onUpdateProduct: (product: Product) => void;
-  onDeleteProduct: (id: ProductId) => void;
+  currentUserId: number;
+  onAddProduct: (product: Product) => void | Promise<void>;
+  onUpdateProduct: (product: Product) => void | Promise<void>;
+  onDeleteProduct: (id: ProductId) => void | Promise<void>;
   onNotify: (msg: string) => void;
 }
 
@@ -58,6 +59,7 @@ function isSafeImagePreview(src: string | undefined): boolean {
 export function AdminView({
   products,
   orders = [],
+  currentUserId,
   onAddProduct,
   onUpdateProduct,
   onDeleteProduct,
@@ -95,36 +97,20 @@ export function AdminView({
   }, []);
 
   const getUserMetrics = (user: User) => {
-    const isSeller = (user.id_roles || []).includes(2);
-    const isBuyer = (user.id_roles || []).includes(3);
-
+    const hasProductOwnerData = products.some((product) => product.sellerId !== undefined);
     const matchedProducts = products.filter(
       (p) => p.sellerId !== undefined && String(p.sellerId) === String(user.id_usuarios ?? "")
     );
 
     const matchedPurchases = orders
-      .filter((o) => o.buyerEmail?.toLowerCase() === user.email.toLowerCase())
-      .reduce((sum, o) => sum + o.units, 0);
-
-    const matchedSales = orders
-      .filter((o) => o.sellerEmail?.toLowerCase() === user.email.toLowerCase())
+      .filter((o) => o.buyerId === user.id_usuarios)
       .reduce((sum, o) => sum + o.units, 0);
 
     const published =
       user.productos_publicados ??
-      (matchedProducts.length > 0 ? matchedProducts.length : isSeller ? products.length : 0);
-
-    const purchased =
-      user.productos_comprados ??
-      (matchedPurchases > 0
-        ? matchedPurchases
-        : isBuyer
-        ? orders.reduce((sum, o) => sum + o.units, 0)
-        : 0);
-
-    const sold =
-      user.productos_vendidos ??
-      (matchedSales > 0 ? matchedSales : isSeller ? orders.reduce((sum, o) => sum + o.units, 0) : 0);
+      (hasProductOwnerData ? matchedProducts.length : null);
+    const purchased = user.productos_comprados ?? matchedPurchases;
+    const sold = user.productos_vendidos ?? null;
 
     return { published, purchased, sold };
   };
@@ -132,18 +118,23 @@ export function AdminView({
   const handleSaveUser = async (userData: Omit<User, "id_usuarios">, id?: number) => {
     try {
       if (id !== undefined) {
-        const updated = await userService.update(id, userData);
+        const updatePayload = userData.id_roles.includes(1)
+          ? (({ id_roles: _ignored, ...rest }) => rest)(userData)
+          : userData;
+        const updated = await userService.update(id, updatePayload);
         setUsers((prev) =>
           prev.map((u) => (u.id_usuarios === id ? { ...u, ...updated } : u))
         );
         onNotify("Usuario actualizado correctamente");
       } else {
-        const created = await userService.create(userData);
+        if (!userData.contrasena) throw new Error("La contraseña es obligatoria para crear una cuenta.");
+        const created = await userService.create({ ...userData, contrasena: userData.contrasena });
         setUsers((prev) => [created, ...prev]);
         onNotify("Usuario creado correctamente");
       }
     } catch (error) {
       onNotify(error instanceof Error ? error.message : "Error al guardar usuario");
+      throw error;
     }
   };
 
@@ -193,7 +184,7 @@ export function AdminView({
     setIsProductFormOpen(true);
   };
 
-  const handleProductSubmit = (e: React.FormEvent) => {
+  const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const sanitizedProduct: Product = {
       ...productForm,
@@ -204,13 +195,22 @@ export function AdminView({
       stock: Math.max(0, Math.floor(Number(productForm.stock) || 0)),
     };
 
-    if (editingProduct) {
-      onUpdateProduct({ ...sanitizedProduct, id: editingProduct.id });
-    } else {
-      onAddProduct(sanitizedProduct);
+    if (!sanitizedProduct.name || !sanitizedProduct.category || sanitizedProduct.price <= 0) {
+      onNotify("Ingresa nombre, categoría y un precio mayor que cero.");
+      return;
     }
-    setIsProductFormOpen(false);
-    setEditingProduct(null);
+
+    try {
+      if (editingProduct) {
+        await onUpdateProduct({ ...sanitizedProduct, id: editingProduct.id });
+      } else {
+        await onAddProduct(sanitizedProduct);
+      }
+      setIsProductFormOpen(false);
+      setEditingProduct(null);
+    } catch {
+      // App comunica el error y el formulario permanece abierto para corregirlo.
+    }
   };
 
   const filteredUsers = useMemo(() => {
@@ -311,6 +311,9 @@ export function AdminView({
 
       {activeTab === "users" && (
         <section className="card" style={{ padding: "20px" }}>
+          <p role="note" className="muted" style={{ marginTop: 0 }}>
+            El backend solo permite modificar la cuenta autenticada. La edición de terceros, suspensión y eliminación están deshabilitadas hasta que el backend implemente permisos administrativos.
+          </p>
           <div
             style={{
               display: "flex",
@@ -484,7 +487,7 @@ export function AdminView({
                                 fontWeight: 600,
                               }}
                             >
-                              📦 Publicados: {stats.published}
+                              📦 Publicados: {stats.published ?? "N/D"}
                             </span>
                             <span
                               title="Productos vendidos"
@@ -496,7 +499,7 @@ export function AdminView({
                                 fontWeight: 600,
                               }}
                             >
-                              💰 Vendidos: {stats.sold}
+                              💰 Vendidos: {stats.sold ?? "N/D"}
                             </span>
                             <span
                               title="Productos comprados"
@@ -535,6 +538,8 @@ export function AdminView({
                             <button
                               type="button"
                               className="btn"
+                              disabled={user.id_usuarios !== currentUserId}
+                              title={user.id_usuarios === currentUserId ? "Editar mi perfil" : "El backend no autoriza editar cuentas de terceros"}
                               style={{ padding: "5px 10px", fontSize: "0.8rem" }}
                               onClick={() => {
                                 setEditingUser(user);
@@ -546,6 +551,8 @@ export function AdminView({
                             <button
                               type="button"
                               className="btn"
+                              disabled
+                              title="La gestión de estado de cuentas no está autorizada desde este panel"
                               style={{
                                 padding: "5px 10px",
                                 fontSize: "0.8rem",
@@ -558,6 +565,8 @@ export function AdminView({
                             <button
                               type="button"
                               className="btn"
+                              disabled
+                              title="La eliminación de usuarios no está habilitada desde este panel"
                               style={{
                                 padding: "5px 10px",
                                 fontSize: "0.8rem",
@@ -670,7 +679,7 @@ export function AdminView({
               <input
                 type="number"
                 required
-                min={0}
+                min={1}
                 placeholder="Precio COP"
                 value={productForm.price}
                 onChange={(e) =>
@@ -728,6 +737,10 @@ export function AdminView({
                       if (!file) return;
                       try {
                         const imgData = await compressProductImage(file);
+                        if (imgData.length > 500) {
+                          onNotify("El backend admite imágenes de hasta 500 caracteres. Usa una URL pública en el campo de imagen.");
+                          return;
+                        }
                         setProductForm({ ...productForm, emoji: imgData, image: imgData });
                       } catch (err) {
                         onNotify(
@@ -751,6 +764,13 @@ export function AdminView({
                 )}
               </div>
 
+              <input
+                type="url"
+                placeholder="URL pública de imagen (opcional)"
+                value={productForm.image?.startsWith("data:image/") ? "" : productForm.image || ""}
+                onChange={(e) => setProductForm({ ...productForm, image: e.target.value, emoji: e.target.value || "📦" })}
+                style={{ padding: "9px 12px", borderRadius: "8px", border: "1px solid #283566", backgroundColor: "#162044", color: "#f8fafc" }}
+              />
               <input
                 type="text"
                 required

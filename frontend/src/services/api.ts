@@ -20,22 +20,31 @@ function normalizeEndpoint(endpoint: string): string {
   return endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
 }
 
-function getSafeErrorMessage(status: number, detail: unknown): string {
+function getSafeErrorMessage(status: number, payload: unknown): string {
+  const body = payload && typeof payload === "object"
+    ? (payload as Record<string, unknown>)
+    : {};
+  const detail = body.detail ?? body.mensaje ?? body.message;
+
   if (status === 401) {
-    return "Tu sesión no es válida o ha expirado. Inicia sesión nuevamente.";
+    return typeof detail === "string" && detail.trim()
+      ? detail.trim()
+      : "Tu sesión no es válida o ha expirado. Inicia sesión nuevamente.";
   }
   if (status === 403) {
-    return "No tienes permisos para realizar esta acción.";
+    return typeof detail === "string" && detail.trim()
+      ? detail.trim()
+      : "No tienes permisos para realizar esta acción.";
   }
   if (status === 404) {
-    return "El recurso solicitado no fue encontrado.";
+    return typeof detail === "string" && detail.trim()
+      ? detail.trim()
+      : "El recurso solicitado no fue encontrado.";
   }
-  if (status >= 500) {
-    return "Error interno del servidor. Inténtalo más tarde.";
-  }
-  if (typeof detail === "string" && detail.trim().length > 0 && detail.length <= 200) {
+  if (typeof detail === "string" && detail.trim().length > 0 && detail.length <= 240) {
     return detail.trim();
   }
+  if (status >= 500) return "Error interno del servidor. Inténtalo más tarde.";
   return "Ocurrió un error en la solicitud.";
 }
 
@@ -43,7 +52,9 @@ export async function request<TResponse>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<TResponse | null> {
-  const token = localStorage.getItem("revenfy_token");
+  const token = typeof localStorage === "undefined"
+    ? null
+    : localStorage.getItem("revenfy_token");
 
   const customHeaders: Record<string, string> = {};
   if (options.headers) {
@@ -53,7 +64,8 @@ export async function request<TResponse>(
   }
 
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+    Accept: "application/json",
+    ...(options.body ? { "Content-Type": "application/json" } : {}),
     ...customHeaders,
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
@@ -64,15 +76,12 @@ export async function request<TResponse>(
   });
 
   if (!response.ok) {
-    const errorPayload = (await response.json().catch(() => ({}))) as {
-      detail?: unknown;
-    };
-    throw new ApiError(
-      getSafeErrorMessage(response.status, errorPayload.detail),
-      response.status
-    );
+    const errorPayload = await response.json().catch(() => ({}));
+    throw new ApiError(getSafeErrorMessage(response.status, errorPayload), response.status);
   }
 
   if (response.status === 204) return null;
-  return (await response.json()) as TResponse;
+  const text = await response.text();
+  if (!text) return null;
+  return JSON.parse(text) as TResponse;
 }

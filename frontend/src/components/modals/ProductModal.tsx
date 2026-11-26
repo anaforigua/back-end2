@@ -33,6 +33,10 @@ export function ProductModal({ product, onClose, onSave }: ProductModalProps) {
     if (!file) return;
     try {
       const compressed = await compressProductImage(file);
+      if (compressed.length > 500) {
+        alert("El backend admite imágenes de hasta 500 caracteres. Ingresa una URL pública de imagen.");
+        return;
+      }
       setForm((prev) => ({ ...prev, emoji: compressed, image: compressed }));
     } catch (err) {
       alert(err instanceof Error ? err.message : "No se pudo cargar la imagen");
@@ -41,7 +45,10 @@ export function ProductModal({ product, onClose, onSave }: ProductModalProps) {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim() || Number(form.price) < 0) return;
+    if (!form.name.trim() || Number(form.price) <= 0) {
+      alert("Ingresa un nombre y un precio mayor que cero.");
+      return;
+    }
     onSave({ ...form, price: Number(form.price), stock: Number(form.stock) });
   };
 
@@ -148,18 +155,29 @@ export function ProductModal({ product, onClose, onSave }: ProductModalProps) {
           </div>
 
           <Field label="Nombre">
-            <input value={form.name} onChange={(e) => set("name", e.target.value)} required />
+            <input value={form.name} maxLength={150} onChange={(e) => set("name", e.target.value)} required />
           </Field>
 
           <Field label="Descripción">
-            <input value={form.description} onChange={(e) => set("description", e.target.value)} required />
+            <input value={form.description} maxLength={1000} onChange={(e) => set("description", e.target.value)} required />
+          </Field>
+
+          <Field label="URL pública de imagen (opcional)">
+            <input
+              type="url"
+              maxLength={500}
+              value={form.image?.startsWith("data:image/") ? "" : form.image || ""}
+              onChange={(e) => setForm((prev) => ({ ...prev, image: e.target.value, emoji: e.target.value || "📦" }))}
+              placeholder="https://..."
+            />
           </Field>
 
           <div className="two">
             <Field label="Precio">
               <input
                 type="number"
-                min="0"
+                min="0.01"
+                step="0.01"
                 value={form.price}
                 onChange={(e) => set("price", e.target.value)}
                 required
@@ -179,9 +197,11 @@ export function ProductModal({ product, onClose, onSave }: ProductModalProps) {
           <Field label="Categoría">
             <select value={form.category} onChange={(e) => set("category", e.target.value)}>
               <option value="Tecnología">Tecnología</option>
-              <option value="Ropa">Ropa</option>
-              <option value="Accesorios">Accesorios</option>
               <option value="Hogar">Hogar</option>
+              <option value="Ropa y accesorios">Ropa y accesorios</option>
+              <option value="Deportes">Deportes</option>
+              <option value="Libros y estudio">Libros y estudio</option>
+              <option value="Videojuegos">Videojuegos</option>
             </select>
           </Field>
 

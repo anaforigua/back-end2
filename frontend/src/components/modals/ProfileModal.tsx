@@ -3,12 +3,12 @@ import React, { useState, useEffect } from "react";
 import { User } from "../../types/user";
 import { userService } from "../../services/userService";
 import { UserAvatar } from "../UserAvatar";
-import { compressImageFile, getOrCreateUserProfile } from "../../utils/avatarHelper";
+import { compressImageFile } from "../../utils/avatarHelper";
 import { getRealTimeLocation } from "../../utils/locationHelper";
 
 interface ProfileModalProps {
   isOpen: boolean;
-  email: string;
+  user: User;
   onClose: () => void;
   onUpdated: (updatedUser: User) => void;
 }
@@ -48,7 +48,7 @@ const secondaryBtnStyle: React.CSSProperties = {
   gap: "6px",
 };
 
-export function ProfileModal({ isOpen, email, onClose, onUpdated }: ProfileModalProps) {
+export function ProfileModal({ isOpen, user, onClose, onUpdated }: ProfileModalProps) {
   const [profile, setProfile] = useState<User | null>(null);
   const [password, setPassword] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
@@ -56,13 +56,12 @@ export function ProfileModal({ isOpen, email, onClose, onUpdated }: ProfileModal
   const [locating, setLocating] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!isOpen || !email) return;
+    if (!isOpen) return;
     setLoading(true);
     setPassword("");
-    getOrCreateUserProfile(email)
-      .then((user) => setProfile(user))
-      .finally(() => setLoading(false));
-  }, [isOpen, email]);
+    setProfile(user);
+    setLoading(false);
+  }, [isOpen, user]);
 
   if (!isOpen) return null;
 
@@ -71,6 +70,10 @@ export function ProfileModal({ isOpen, email, onClose, onUpdated }: ProfileModal
     if (!file || !profile) return;
     try {
       const compressed = await compressImageFile(file);
+      if (compressed.length > 500) {
+        alert("El backend solo admite avatares de hasta 500 caracteres. Usa un emoji o una URL pública de imagen.");
+        return;
+      }
       setProfile({ ...profile, avatar: compressed });
     } catch (err) {
       alert(err instanceof Error ? err.message : "No se pudo cargar la foto");
@@ -104,25 +107,25 @@ export function ProfileModal({ isOpen, email, onClose, onUpdated }: ProfileModal
       const payload: Partial<User> = {
         nombre: profile.nombre,
         apellidos: profile.apellidos,
-        avatar: profile.avatar,
         biografia: profile.biografia.trim(),
         ubicacion: profile.ubicacion,
         email: profile.email,
         calificacion: profile.calificacion,
         estado_usuario: profile.estado_usuario,
-        id_roles: profile.id_roles,
       };
+
+      if (!profile.avatar.startsWith("data:image/") || profile.avatar.length <= 500) {
+        payload.avatar = profile.avatar;
+      }
 
       if (password.trim()) {
         payload.contrasena = password.trim();
       }
 
-      let saved: User;
-      if (profile.id_usuarios !== undefined) {
-        saved = await userService.update(profile.id_usuarios, payload);
-      } else {
-        saved = await userService.create(payload as Omit<User, "id_usuarios">);
+      if (profile.id_usuarios === undefined) {
+        throw new Error("El perfil no tiene un identificador válido.");
       }
+      const saved = await userService.update(profile.id_usuarios, payload);
 
       onUpdated(saved);
       onClose();
@@ -262,6 +265,18 @@ export function ProfileModal({ isOpen, email, onClose, onUpdated }: ProfileModal
                   )}
                 </div>
               </div>
+            </div>
+
+            <div>
+              <label style={labelStyle}>URL pública del avatar (opcional, máximo 500 caracteres)</label>
+              <input
+                type="url"
+                maxLength={500}
+                value={profile.avatar?.startsWith("http") ? profile.avatar : ""}
+                onChange={(e) => setProfile({ ...profile, avatar: e.target.value || "👤" })}
+                placeholder="https://..."
+                style={inputStyle}
+              />
             </div>
 
             {/* Nombre y Apellidos */}

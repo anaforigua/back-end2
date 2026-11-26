@@ -11,7 +11,6 @@ interface UserModalProps {
 }
 
 const AVAILABLE_ROLES = [
-  { id: 1, label: "Administrador" },
   { id: 2, label: "Vendedor" },
   { id: 3, label: "Comprador" },
 ];
@@ -93,6 +92,11 @@ export function UserModal({ isOpen, editingUser, onClose, onSave }: UserModalPro
         ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, maxSize, maxSize);
         const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.82);
 
+        if (compressedDataUrl.length > 500) {
+          alert("El backend solo admite avatares de hasta 500 caracteres. Usa un emoji o una URL pública de imagen.");
+          return;
+        }
+
         setForm((prev) => ({ ...prev, avatar: compressedDataUrl }));
       };
       img.src = String(event.target?.result || "");
@@ -110,6 +114,8 @@ export function UserModal({ isOpen, editingUser, onClose, onSave }: UserModalPro
       }
       await onSave(payload, editingUser?.id_usuarios);
       onClose();
+    } catch {
+      // El llamador ya comunica el error; conserva el formulario abierto.
     } finally {
       setSubmitting(false);
     }
@@ -180,6 +186,18 @@ export function UserModal({ isOpen, editingUser, onClose, onSave }: UserModalPro
                 )}
               </div>
             </div>
+          </div>
+
+          <div>
+            <label className="muted" style={{ fontSize: "0.85rem" }}>URL pública del avatar (opcional)</label>
+            <input
+              type="url"
+              maxLength={500}
+              value={form.avatar.startsWith("http") ? form.avatar : ""}
+              onChange={(e) => setForm({ ...form, avatar: e.target.value || "👤" })}
+              placeholder="https://..."
+              style={{ width: "100%", padding: "8px", borderRadius: "8px", border: "1px solid #ccc" }}
+            />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
@@ -283,7 +301,9 @@ export function UserModal({ isOpen, editingUser, onClose, onSave }: UserModalPro
               Roles Asignados
             </label>
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-              {AVAILABLE_ROLES.map((role) => {
+              {editingUser?.id_roles.includes(1) ? (
+                <span className="muted">El rol administrador se conserva; el backend no permite asignarlo desde este formulario.</span>
+              ) : AVAILABLE_ROLES.map((role) => {
                 const active = form.id_roles.includes(role.id);
                 return (
                   <button

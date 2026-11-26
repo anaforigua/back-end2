@@ -16,15 +16,15 @@ export interface User {
   calificacion: number;
   estado_usuario: UserStatus;
   id_roles: number[];
+  /** Solo se usa en formularios; la API nunca devuelve la contraseña. */
+  contrasena?: string;
   productos_publicados?: number;
   productos_comprados?: number;
   productos_vendidos?: number;
 }
 
-export interface UserCreateInput extends Omit<User, "id_usuarios"> {
+export type UserCreateInput = Omit<User, "id_usuarios"> & {
   contrasena: string;
-}
-
-export type UserUpdateInput = Partial<Omit<User, "id_usuarios">> & {
-  contrasena?: string;
 };
+
+export type UserUpdateInput = Partial<Omit<User, "id_usuarios">>;

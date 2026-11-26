@@ -1,6 +1,3 @@
-import { User } from "../types/user";
-import { userService } from "../services/userService";
-
 const ALLOWED_IMAGE_TYPES = new Set([
   "image/jpeg",
   "image/jpg",
@@ -73,32 +70,6 @@ export async function compressImageFile(file: File): Promise<string> {
 
   ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, maxSize, maxSize);
   return canvas.toDataURL("image/jpeg", 0.82);
-}
-
-export async function getOrCreateUserProfile(email: string): Promise<User> {
-  const normalized = email.trim().toLowerCase();
-  const users = await userService.getAll();
-  const existing = users.find(
-    (u) => u.email.trim().toLowerCase() === normalized
-  );
-
-  if (existing) {
-    return existing;
-  }
-
-  const localPart = normalized.split("@")[0]?.trim() || "Usuario";
-
-  return await userService.create({
-    nombre: localPart,
-    apellidos: "Revenfy",
-    avatar: "👤",
-    biografia: "",
-    ubicacion: "Bogotá D.C.",
-    email: normalized,
-    calificacion: 5.0,
-    estado_usuario: "Activo",
-    id_roles: [2, 3],
-  });
 }
 
 export async function compressProductImage(file: File): Promise<string> {
