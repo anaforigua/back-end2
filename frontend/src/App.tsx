@@ -75,9 +75,6 @@ function categoryId(category: string): number {
 function toApiProduct(product: Product): Record<string, unknown> {
   const stock = Math.max(0, Math.floor(Number(product.stock) || 0));
   const candidateImage = String(product.image ?? "").trim();
-  if (candidateImage.startsWith("data:image/") && candidateImage.length > 500) {
-    throw new Error("El backend limita las imágenes a 500 caracteres. Guarda el producto sin imagen o usa una URL pública.");
-  }
   const image = /^(https?:\/\/|\/|data:image\/)/i.test(candidateImage)
     ? candidateImage
     : "";

@@ -737,10 +737,6 @@ export function AdminView({
                       if (!file) return;
                       try {
                         const imgData = await compressProductImage(file);
-                        if (imgData.length > 500) {
-                          onNotify("El backend admite imágenes de hasta 500 caracteres. Usa una URL pública en el campo de imagen.");
-                          return;
-                        }
                         setProductForm({ ...productForm, emoji: imgData, image: imgData });
                       } catch (err) {
                         onNotify(

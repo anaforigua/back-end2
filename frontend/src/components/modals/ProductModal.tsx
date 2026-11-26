@@ -33,10 +33,6 @@ export function ProductModal({ product, onClose, onSave }: ProductModalProps) {
     if (!file) return;
     try {
       const compressed = await compressProductImage(file);
-      if (compressed.length > 500) {
-        alert("El backend admite imágenes de hasta 500 caracteres. Ingresa una URL pública de imagen.");
-        return;
-      }
       setForm((prev) => ({ ...prev, emoji: compressed, image: compressed }));
     } catch (err) {
       alert(err instanceof Error ? err.message : "No se pudo cargar la imagen");
@@ -165,7 +161,6 @@ export function ProductModal({ product, onClose, onSave }: ProductModalProps) {
           <Field label="URL pública de imagen (opcional)">
             <input
               type="url"
-              maxLength={500}
               value={form.image?.startsWith("data:image/") ? "" : form.image || ""}
               onChange={(e) => setForm((prev) => ({ ...prev, image: e.target.value, emoji: e.target.value || "📦" }))}
               placeholder="https://..."

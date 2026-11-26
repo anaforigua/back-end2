@@ -70,10 +70,6 @@ export function ProfileModal({ isOpen, user, onClose, onUpdated }: ProfileModalP
     if (!file || !profile) return;
     try {
       const compressed = await compressImageFile(file);
-      if (compressed.length > 500) {
-        alert("El backend solo admite avatares de hasta 500 caracteres. Usa un emoji o una URL pública de imagen.");
-        return;
-      }
       setProfile({ ...profile, avatar: compressed });
     } catch (err) {
       alert(err instanceof Error ? err.message : "No se pudo cargar la foto");
@@ -112,11 +108,8 @@ export function ProfileModal({ isOpen, user, onClose, onUpdated }: ProfileModalP
         email: profile.email,
         calificacion: profile.calificacion,
         estado_usuario: profile.estado_usuario,
+        avatar: profile.avatar,
       };
-
-      if (!profile.avatar.startsWith("data:image/") || profile.avatar.length <= 500) {
-        payload.avatar = profile.avatar;
-      }
 
       if (password.trim()) {
         payload.contrasena = password.trim();
@@ -268,10 +261,9 @@ export function ProfileModal({ isOpen, user, onClose, onUpdated }: ProfileModalP
             </div>
 
             <div>
-              <label style={labelStyle}>URL pública del avatar (opcional, máximo 500 caracteres)</label>
+              <label style={labelStyle}>URL pública del avatar (opcional)</label>
               <input
                 type="url"
-                maxLength={500}
                 value={profile.avatar?.startsWith("http") ? profile.avatar : ""}
                 onChange={(e) => setProfile({ ...profile, avatar: e.target.value || "👤" })}
                 placeholder="https://..."

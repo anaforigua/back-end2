@@ -92,11 +92,6 @@ export function UserModal({ isOpen, editingUser, onClose, onSave }: UserModalPro
         ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, maxSize, maxSize);
         const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.82);
 
-        if (compressedDataUrl.length > 500) {
-          alert("El backend solo admite avatares de hasta 500 caracteres. Usa un emoji o una URL pública de imagen.");
-          return;
-        }
-
         setForm((prev) => ({ ...prev, avatar: compressedDataUrl }));
       };
       img.src = String(event.target?.result || "");
@@ -192,7 +187,6 @@ export function UserModal({ isOpen, editingUser, onClose, onSave }: UserModalPro
             <label className="muted" style={{ fontSize: "0.85rem" }}>URL pública del avatar (opcional)</label>
             <input
               type="url"
-              maxLength={500}
               value={form.avatar.startsWith("http") ? form.avatar : ""}
               onChange={(e) => setForm({ ...form, avatar: e.target.value || "👤" })}
               placeholder="https://..."

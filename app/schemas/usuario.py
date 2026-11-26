@@ -37,7 +37,7 @@ class RolResumenRead(BaseModel):
 class UsuarioBase(BaseModel):
     nombre: str = Field(..., min_length=3, max_length=100)
     apellidos: str = Field(..., min_length=3, max_length=100)
-    avatar: str = Field(..., min_length=1, max_length=500)
+    avatar: str = Field(..., min_length=1)
     biografia: str = Field(..., max_length=500)
     ubicacion: str = Field(..., min_length=1, max_length=150)
     email: str = Field(..., min_length=5, max_length=180)
@@ -90,7 +90,7 @@ class UsuarioCreate(UsuarioBase):
 class UsuarioUpdate(BaseModel):
     nombre: Optional[str] = Field(None, min_length=3, max_length=100)
     apellidos: Optional[str] = Field(None, min_length=3, max_length=100)
-    avatar: Optional[str] = Field(None, min_length=1, max_length=500)
+    avatar: Optional[str] = Field(None, min_length=1)
     biografia: Optional[str] = Field(None, max_length=500)
     ubicacion: Optional[str] = Field(None, min_length=1, max_length=150)
     email: Optional[str] = Field(None, min_length=5, max_length=180)

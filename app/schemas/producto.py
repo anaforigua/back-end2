@@ -51,7 +51,7 @@ class ProductoBase(BaseModel):
     # Precio mayor a cero
     precio: float = Field(..., gt=0)
     # Ruta o URL de las imágenes
-    imagenes_producto: Optional[str] = Field(None, max_length=500)
+    imagenes_producto: Optional[str] = None
     # Condición del producto (ej. Usado / Nuevo)
     condicion_producto: str = Field(..., min_length=1, max_length=60)
     # Estado de la publicación (ej. Disponible)
@@ -105,7 +105,7 @@ class ProductoUpdate(BaseModel):
     )
     descripcion: Optional[str] = Field(None, min_length=1, max_length=1000)
     precio: Optional[float] = Field(None, gt=0)
-    imagenes_producto: Optional[str] = Field(None, max_length=500)
+    imagenes_producto: Optional[str] = None
     condicion_producto: Optional[str] = Field(None, min_length=1, max_length=60)
     estado_producto: Optional[str] = Field(None, min_length=1, max_length=60)
     cantidad: Optional[int] = Field(None, ge=0)
