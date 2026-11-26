@@ -193,3 +193,5 @@ python -m pytest -v
 * **Jhon Alex Beltrán Herrera** — *Desarrollador & Analista SENA*
 * **Julián Esteban Murillo Mena** — *Desarrollador & Analista SENA*
 * **Jhoan Felipe Hernández Murcia** — *Desarrollador & Analista SENA*
+
+DATABASE_URL:postgresql://neondb_owner:npg_lYf5KbFkDUu7@ep-aged-tree-be2uu3zh-pooler.c-9.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
