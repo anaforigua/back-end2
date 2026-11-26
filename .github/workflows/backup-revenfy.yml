@@ -1,0 +1,36 @@
+name: Respaldo PostgreSQL Revenfy
+
+on:
+  schedule:
+    # Ejecuta todos los días a las 03:00 UTC (10:00 PM COT en Bogotá)
+    - cron: '0 3 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  backup-db:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código del repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar cliente de PostgreSQL (pg_dump)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Ejecutar script de respaldo
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          BACKUP_DIR: /tmp/revenfy_backups
+          BACKUP_PREFIX: revenfy_backup
+          RETENTION_DAYS: "14"
+        run: |
+          chmod +x scripts/backup_revenfy_cloud.sh
+          ./scripts/backup_revenfy_cloud.sh
+
+      - name: Guardar respaldo como artefacto del workflow
+        uses: actions/upload-artifact@v4
+        with:
+          name: revenfy-db-backup-${{ github.run_id }}
+          path: /tmp/revenfy_backups/*.dump
+          retention-days: 14
