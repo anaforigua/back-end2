@@ -1,19 +1,21 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Path, status
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.schemas.rol import RolCreate, RolUpdate, RolRead
+from app.schemas.rol import RolCreate, RolUpdate
 from app.services.rol_service import RolService
 
 router = APIRouter(prefix="/roles", tags=["Roles"])
-    
+
+
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def crear_rol(data: RolCreate, db: Session = Depends(get_db)):
     rol = RolService.crear(db, data)
     return {
         "status": "success",
         "mensaje": "Rol creado exitosamente",
-        "data": rol
+        "data": rol,
     }
+
 
 @router.get("/")
 def listar_roles(db: Session = Depends(get_db)):
@@ -21,32 +23,45 @@ def listar_roles(db: Session = Depends(get_db)):
     return {
         "status": "success",
         "mensaje": "Roles listados exitosamente",
-        "data": roles
+        "data": roles,
     }
 
+
 @router.get("/{rol_id}")
-def obtener_rol(rol_id: int, db: Session = Depends(get_db)):
+def obtener_rol(
+    rol_id: int = Path(..., gt=0),
+    db: Session = Depends(get_db),
+):
     rol = RolService.obtener_por_id(db, rol_id)
     return {
         "status": "success",
         "mensaje": "Rol encontrado",
-        "data": rol
+        "data": rol,
     }
 
+
 @router.put("/{rol_id}")
-def actualizar_rol(rol_id: int, data: RolUpdate, db: Session = Depends(get_db)):
+def actualizar_rol(
+    data: RolUpdate,
+    rol_id: int = Path(..., gt=0),
+    db: Session = Depends(get_db),
+):
     rol = RolService.actualizar(db, rol_id, data)
     return {
         "status": "success",
         "mensaje": "Rol actualizado exitosamente",
-        "data": rol
+        "data": rol,
     }
 
+
 @router.delete("/{rol_id}")
-def eliminar_rol(rol_id: int, db: Session = Depends(get_db)):
+def eliminar_rol(
+    rol_id: int = Path(..., gt=0),
+    db: Session = Depends(get_db),
+):
     resultado = RolService.eliminar(db, rol_id)
     return {
         "status": "success",
         "mensaje": "Rol eliminado exitosamente",
-        "data": resultado
+        "data": resultado,
     }

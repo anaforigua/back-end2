@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Path, status
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.schemas.producto import ProductoCreate, ProductoUpdate, ProductoRead
+from app.schemas.producto import ProductoCreate, ProductoUpdate
 from app.services.producto_service import ProductoService
 
 router = APIRouter(prefix="/productos", tags=["Productos"])
+
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def crear_producto(data: ProductoCreate, db: Session = Depends(get_db)):
@@ -12,8 +13,9 @@ def crear_producto(data: ProductoCreate, db: Session = Depends(get_db)):
     return {
         "status": "success",
         "mensaje": "Producto creado exitosamente",
-        "data": producto
+        "data": producto,
     }
+
 
 @router.get("/")
 def listar_productos(db: Session = Depends(get_db)):
@@ -21,32 +23,45 @@ def listar_productos(db: Session = Depends(get_db)):
     return {
         "status": "success",
         "mensaje": "Productos listados exitosamente",
-        "data": productos
+        "data": productos,
     }
 
+
 @router.get("/{id_productos}")
-def obtener_producto(id_productos: int, db: Session = Depends(get_db)):
+def obtener_producto(
+    id_productos: int = Path(..., gt=0),
+    db: Session = Depends(get_db),
+):
     producto = ProductoService.obtener_por_id(db, id_productos)
     return {
         "status": "success",
         "mensaje": "Producto encontrado",
-        "data": producto
+        "data": producto,
     }
 
+
 @router.put("/{id_productos}")
-def actualizar_producto(id_productos: int, data: ProductoUpdate, db: Session = Depends(get_db)):
+def actualizar_producto(
+    data: ProductoUpdate,
+    id_productos: int = Path(..., gt=0),
+    db: Session = Depends(get_db),
+):
     producto = ProductoService.actualizar(db, id_productos, data)
     return {
         "status": "success",
         "mensaje": "Producto actualizado exitosamente",
-        "data": producto
+        "data": producto,
     }
 
+
 @router.delete("/{id_productos}")
-def eliminar_producto(id_productos: int, db: Session = Depends(get_db)):
+def eliminar_producto(
+    id_productos: int = Path(..., gt=0),
+    db: Session = Depends(get_db),
+):
     resultado = ProductoService.eliminar(db, id_productos)
     return {
         "status": "success",
         "mensaje": "Producto eliminado exitosamente",
-        "data": resultado
+        "data": resultado,
     }

@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Path, status
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.schemas.detalle_pedido import DetallePedidoCreate, DetallePedidoUpdate, DetallePedidoRead
+from app.schemas.detalle_pedido import DetallePedidoCreate, DetallePedidoUpdate
 from app.services.detalle_pedido_service import DetallePedidoService
 
 router = APIRouter(prefix="/detalles-pedido", tags=["Detalle Pedidos"])
+
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def crear_detalle_pedido(data: DetallePedidoCreate, db: Session = Depends(get_db)):
@@ -12,8 +13,9 @@ def crear_detalle_pedido(data: DetallePedidoCreate, db: Session = Depends(get_db
     return {
         "status": "success",
         "mensaje": "Detalle de pedido creado exitosamente",
-        "data": detalle
+        "data": detalle,
     }
+
 
 @router.get("/")
 def listar_detalles_pedido(db: Session = Depends(get_db)):
@@ -21,32 +23,45 @@ def listar_detalles_pedido(db: Session = Depends(get_db)):
     return {
         "status": "success",
         "mensaje": "Detalles de pedido listados exitosamente",
-        "data": detalles
+        "data": detalles,
     }
 
+
 @router.get("/{detalle_pedido}")
-def obtener_detalle_pedido(detalle_pedido: int, db: Session = Depends(get_db)):
+def obtener_detalle_pedido(
+    detalle_pedido: int = Path(..., gt=0),
+    db: Session = Depends(get_db),
+):
     detalle = DetallePedidoService.obtener_por_id(db, detalle_pedido)
     return {
         "status": "success",
         "mensaje": "Detalle de pedido encontrado",
-        "data": detalle
+        "data": detalle,
     }
 
+
 @router.put("/{detalle_pedido}")
-def actualizar_detalle_pedido(detalle_pedido: int, data: DetallePedidoUpdate, db: Session = Depends(get_db)):
+def actualizar_detalle_pedido(
+    data: DetallePedidoUpdate,
+    detalle_pedido: int = Path(..., gt=0),
+    db: Session = Depends(get_db),
+):
     detalle = DetallePedidoService.actualizar(db, detalle_pedido, data)
     return {
         "status": "success",
         "mensaje": "Detalle de pedido actualizado exitosamente",
-        "data": detalle
+        "data": detalle,
     }
 
+
 @router.delete("/{detalle_pedido}")
-def eliminar_detalle_pedido(detalle_pedido: int, db: Session = Depends(get_db)):
+def eliminar_detalle_pedido(
+    detalle_pedido: int = Path(..., gt=0),
+    db: Session = Depends(get_db),
+):
     resultado = DetallePedidoService.eliminar(db, detalle_pedido)
     return {
         "status": "success",
         "mensaje": "Detalle de pedido eliminado exitosamente",
-        "data": resultado
+        "data": resultado,
     }

@@ -1,8 +1,12 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from fastapi import HTTPException, status
 from app.models.roles_usuarios import RolUsuarioModel as RolUsuario
 from app.models.usuario import UsuarioModel as Usuario
 from app.schemas.roles_usuarios import RolUsuarioCreate, RolUsuarioUpdate
+
+CAMPOS_NO_EDITABLES = {"id_rol_usuario"}
+
 
 class RolUsuarioService:
 
@@ -27,11 +31,24 @@ class RolUsuarioService:
                 detail="❌ La relación rol-usuario ya existe."
             )
 
-        nuevo_registro = RolUsuario(**data.model_dump())
-        db.add(nuevo_registro)
-        db.commit()
-        db.refresh(nuevo_registro)
-        return nuevo_registro
+        try:
+            nuevo_registro = RolUsuario(**data.model_dump())
+            db.add(nuevo_registro)
+            db.commit()
+            db.refresh(nuevo_registro)
+            return nuevo_registro
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="❌ No se pudo asignar el rol por conflicto o regla de integridad."
+            )
+        except SQLAlchemyError:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="❌ Error interno al registrar la asignación de rol."
+            )
 
     @staticmethod
     def obtener_todos(db: Session):
@@ -62,15 +79,42 @@ class RolUsuarioService:
 
         datos_actualizacion = data.model_dump(exclude_unset=True)
         for key, value in datos_actualizacion.items():
-            setattr(registro, key, value)
+            if key not in CAMPOS_NO_EDITABLES and hasattr(registro, key):
+                setattr(registro, key, value)
 
-        db.commit()
-        db.refresh(registro)
-        return registro
+        try:
+            db.commit()
+            db.refresh(registro)
+            return registro
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="❌ No se pudo actualizar la asignación por regla de integridad."
+            )
+        except SQLAlchemyError:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="❌ Error interno al actualizar la asignación de rol."
+            )
 
     @staticmethod
     def eliminar(db: Session, id_rol_usuario: int):
         registro = RolUsuarioService.obtener_por_id(db, id_rol_usuario)
-        db.delete(registro)
-        db.commit()
-        return {"mensaje": "Asignación de rol eliminada exitosamente"}
+        try:
+            db.delete(registro)
+            db.commit()
+            return {"mensaje": "Asignación de rol eliminada exitosamente"}
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="❌ No se puede eliminar la asignación porque está en uso."
+            )
+        except SQLAlchemyError:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="❌ Error interno al eliminar la asignación de rol."
+            )

@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Path, status
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.schemas.categorias import CategoriaCreate, CategoriaUpdate, CategoriaRead
+from app.schemas.categorias import CategoriaCreate, CategoriaUpdate
 from app.services.categorias_service import CategoriaService
 
 router = APIRouter(prefix="/categorias", tags=["Categorias"])
+
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def crear_categoria(data: CategoriaCreate, db: Session = Depends(get_db)):
@@ -12,8 +13,9 @@ def crear_categoria(data: CategoriaCreate, db: Session = Depends(get_db)):
     return {
         "status": "success",
         "mensaje": "Categoría creada exitosamente",
-        "data": categoria
+        "data": categoria,
     }
+
 
 @router.get("/")
 def listar_categorias(db: Session = Depends(get_db)):
@@ -21,32 +23,45 @@ def listar_categorias(db: Session = Depends(get_db)):
     return {
         "status": "success",
         "mensaje": "Categorías listadas exitosamente",
-        "data": categorias
+        "data": categorias,
     }
 
+
 @router.get("/{id_categoria}")
-def obtener_categoria(id_categoria: int, db: Session = Depends(get_db)):
+def obtener_categoria(
+    id_categoria: int = Path(..., gt=0),
+    db: Session = Depends(get_db),
+):
     categoria = CategoriaService.obtener_por_id(db, id_categoria)
     return {
         "status": "success",
         "mensaje": "Categoría encontrada",
-        "data": categoria
+        "data": categoria,
     }
 
+
 @router.put("/{id_categoria}")
-def actualizar_categoria(id_categoria: int, data: CategoriaUpdate, db: Session = Depends(get_db)):
+def actualizar_categoria(
+    data: CategoriaUpdate,
+    id_categoria: int = Path(..., gt=0),
+    db: Session = Depends(get_db),
+):
     categoria = CategoriaService.actualizar(db, id_categoria, data)
     return {
         "status": "success",
         "mensaje": "Categoría actualizada exitosamente",
-        "data": categoria
+        "data": categoria,
     }
 
+
 @router.delete("/{id_categoria}")
-def eliminar_categoria(id_categoria: int, db: Session = Depends(get_db)):
+def eliminar_categoria(
+    id_categoria: int = Path(..., gt=0),
+    db: Session = Depends(get_db),
+):
     resultado = CategoriaService.eliminar(db, id_categoria)
     return {
         "status": "success",
         "mensaje": "Categoría eliminada exitosamente",
-        "data": resultado
+        "data": resultado,
     }
