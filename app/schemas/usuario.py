@@ -42,7 +42,7 @@ class UsuarioBase(BaseModel):
     ubicacion: str = Field(..., min_length=1, max_length=150)
     email: str = Field(..., min_length=5, max_length=180)
     contrasena: str = Field(..., min_length=6, max_length=72)
-    calificacion: float = Field(..., ge=0.0, le=5.0)
+    calificacion: Optional[float] = Field(None, ge=0.0, le=5.0)
     estado_usuario: str = Field(..., min_length=1, max_length=50)
     id_roles: List[int]
 

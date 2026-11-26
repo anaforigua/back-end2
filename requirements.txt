@@ -55,3 +55,5 @@ websockets==17.1
 bcrypt==5.0.0
 # Driver psycopg
 psycopg2-binary==2.9.13
+# Version de PYJWT
+PyJWT==2.15.1

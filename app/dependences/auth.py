@@ -1,9 +1,12 @@
 from typing import Optional
+
+import jwt
 from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.usuario import UsuarioModel
+from app.services.security import decode_access_token
 
 
 def _extraer_token(authorization: Optional[str]) -> str:
@@ -26,28 +29,39 @@ def _extraer_token(authorization: Optional[str]) -> str:
 
 
 def _verificar_y_obtener_id_usuario(token: str) -> int:
-    # Aquí conectas la decodificación/verificación del token emitido en /usuarios/login
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Token no válido o expirado.",
-    )
+    cabecera = {"WWW-Authenticate": "Bearer"}
+    try:
+        payload = decode_access_token(token)
+        return int(payload["sub"])
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="El token ha expirado.",
+            headers=cabecera,
+        )
+    except (jwt.InvalidTokenError, KeyError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido.",
+            headers=cabecera,
+        )
 
 
 def obtener_usuario_actual(
     authorization: Optional[str] = Header(default=None),
     db: Session = Depends(get_db),
-) -> Usuario:
+) -> UsuarioModel:
     token = _extraer_token(authorization)
     usuario_id = _verificar_y_obtener_id_usuario(token)
 
-    usuario = db.query(Usuario).filter(Usuario.id_usuarios == usuario_id).first()
+    usuario = db.query(UsuarioModel).filter(UsuarioModel.id_usuarios == usuario_id).first()
     if not usuario:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuario no autorizado.",
         )
 
-    if getattr(usuario, "estado_usuario", "").lower() in {"inactivo", "bloqueado", "suspendido"}:
+    if (usuario.estado_usuario or "").lower() in {"inactivo", "bloqueado", "suspendido"}:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="La cuenta de usuario no se encuentra activa.",

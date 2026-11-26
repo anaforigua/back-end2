@@ -4,6 +4,9 @@ from fastapi.responses import JSONResponse
 
 from app.database import engine, Base
 
+# IMPORTAR CALIFICACION DE USUARIO
+from app.models.calificacion_usuario import CalificacionUsuarioModel
+
 # Importa todos los modelos de SQLAlchemy para que Base los reconozca y cree las tablas
 from app.models.pais_de_origen import PaisDeOrigenModel
 from app.models.categorias import CategoriaModel
