@@ -186,3 +186,19 @@ def stock_de(client, id_producto):
 
 def estado_de(client, id_producto):
     return client.get(f"/productos/{id_producto}").json()["data"]["estado_producto"]
+
+##
+## FUNCION PARA CALCULAR PORCENTAJE DE CADA TIPO DE PRUEBA, PASSED, FAILED Y ERRORS.
+##
+def pytest_terminal_summary(terminalreporter):
+    stats = terminalreporter.stats
+    passed = len(stats.get("passed", []))
+    failed = len(stats.get("failed", []))
+    errors = len(stats.get("error", []))
+    total = passed + failed + errors
+    if total:
+        porcentaje = passed / total * 100
+        terminalreporter.write_sep(
+            "=",
+            f"EFECTIVIDAD: {porcentaje:.2f}% ({passed} de {total} pruebas pasaron)"
+        )
