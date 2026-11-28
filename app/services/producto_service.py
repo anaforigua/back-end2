@@ -98,23 +98,18 @@ class ProductoService:
             )
         return producto
 
+    # ------------------------------------------------------------------
+    # Métodos auxiliares de actualizar() (refactor para bajar complejidad)
+    # ------------------------------------------------------------------
     @staticmethod
-    def actualizar(db: Session, producto_id: int, data: ProductoUpdate):
-        # Buscar el producto objetivo en PostgreSQL
-        producto = db.query(Producto).filter(Producto.id_productos == producto_id).first()
-        if not producto:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Producto no encontrado."
-            )
-
+    def _validar_precio_y_cantidad(data: ProductoUpdate):
         # Validar el precio únicamente si fue enviado en la actualización parcial
         if data.precio is not None and data.precio < 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="❌ Precio negativo."
             )
-            
+
         # Validar la cantidad únicamente si fue enviada en la actualización
         if data.cantidad is not None and data.cantidad <= 0:
             raise HTTPException(
@@ -122,6 +117,8 @@ class ProductoService:
                 detail="❌ Cantidad/precio inválido."
             )
 
+    @staticmethod
+    def _validar_categoria_y_pais(db: Session, data: ProductoUpdate):
         # Validar que la nueva categoría exista si se desea actualizar este campo
         if data.id_categoria is not None:
             categoria_existente = db.query(Categoria).filter(Categoria.id_categoria == data.id_categoria).first()
@@ -139,6 +136,20 @@ class ProductoService:
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="❌ País inexistente."
                 )
+
+    @staticmethod
+    def actualizar(db: Session, producto_id: int, data: ProductoUpdate):
+        # Buscar el producto objetivo en PostgreSQL
+        producto = db.query(Producto).filter(Producto.id_productos == producto_id).first()
+        if not producto:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Producto no encontrado."
+            )
+
+        # Validaciones de los campos enviados en la actualización parcial
+        ProductoService._validar_precio_y_cantidad(data)
+        ProductoService._validar_categoria_y_pais(db, data)
 
         # Extraer únicamente los campos modificados/enviados por el Frontend
         datos_dict = data.model_dump(exclude_unset=True)
